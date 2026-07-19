@@ -35,6 +35,7 @@ No claim in this directory is `VA-VALIDATED` yet.
 - [Pipeline boundary](PIPELINE.md)
 - [Resource and semantic model](RESOURCE_MODEL.md)
 - [Failure modes and parser rules](FAILURE_MODES.md)
+- [DriveClubFS gap audit](TOOL_GAP_AUDIT.md)
 - [F40 first-target plan](F40_TARGET.md)
 - [Open questions and experiments](OPEN_QUESTIONS.md)
 - [Source register](SOURCE_REGISTER.md)
