@@ -1,0 +1,22 @@
+# Large extracted game assets
+raw_assets/
+extracted/
+converted_assets/
+
+# Game/package files
+*.pkg
+*.dat
+*.idx
+*.rpk
+
+# Large DCC/render files
+*.blend1
+*.fbx
+*.obj
+*.dds
+*.exr
+
+# Temporary files
+__pycache__/
+*.tmp
+*.log
