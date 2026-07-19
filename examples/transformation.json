@@ -1,0 +1,25 @@
+{
+  "$schema": "../schemas/transformation.schema.json",
+  "schema_version": "1.0.0",
+  "id": "TRN-DC-F40-SEMANTIC-001",
+  "title": "Copy source streams into a semantic intermediate",
+  "input_asset_ids": ["AST-DC-F40-EXPORT-001"],
+  "output_asset_ids": ["AST-DC-F40-INTERMEDIATE-001"],
+  "tool": {
+    "external_tool_id": null,
+    "name": "VirtualAuto example converter",
+    "version_or_commit": "not-implemented"
+  },
+  "command_or_operation": null,
+  "parameters": {
+    "preserve_all_uv_sets": true,
+    "preserve_unknown_vertex_fields": true,
+    "recalculate_normals": false
+  },
+  "performed_at": "2026-07-20T00:04:00Z",
+  "operator": "VirtualAuto example author",
+  "status": "planned",
+  "loss_assessment": "No conversion was executed; this record demonstrates the required loss declaration.",
+  "preserved_unknowns": ["UNK-DC-F40-VERTEX-001"],
+  "log_evidence_id": "EVD-DC-F40-UV-001"
+}
