@@ -14,7 +14,7 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 try:
     import jsonschema
@@ -84,6 +84,15 @@ def fail(message: str) -> None:
     raise ValueError(message)
 
 
+def repository_paths(pattern: str) -> Iterator[Path]:
+    """Yield repository paths while excluding Git's own object database."""
+    for path in ROOT.rglob(pattern):
+        relative = path.relative_to(ROOT)
+        if ".git" in relative.parts:
+            continue
+        yield path
+
+
 def read_json(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         data = json.load(handle)
@@ -99,8 +108,14 @@ def validate_required_structure() -> None:
 
 
 def validate_no_prohibited_artifacts() -> None:
-    for path in ROOT.rglob("*"):
+    for path in repository_paths("*"):
         relative = path.relative_to(ROOT)
+        if path.is_symlink():
+            resolved = path.resolve()
+            try:
+                resolved.relative_to(ROOT.resolve())
+            except ValueError:
+                fail(f"Symlink escapes repository: {relative}")
         if any(part in FORBIDDEN_DIRECTORIES for part in relative.parts):
             fail(f"Prohibited repository directory: {relative}")
         if path.is_file() and path.suffix.lower() in FORBIDDEN_SUFFIXES:
@@ -108,7 +123,7 @@ def validate_no_prohibited_artifacts() -> None:
 
 
 def validate_json_syntax() -> None:
-    for path in ROOT.rglob("*.json"):
+    for path in repository_paths("*.json"):
         read_json(path)
 
 
@@ -150,7 +165,7 @@ def validate_manifest_instances(
     if jsonschema is None:
         return manifests
 
-    for path in sorted(ROOT.rglob("*.json")):
+    for path in sorted(repository_paths("*.json")):
         if SCHEMA_DIR in path.parents:
             continue
         instance = read_json(path)
@@ -276,7 +291,7 @@ def validate_yaml() -> None:
         print("warning: PyYAML unavailable; YAML parsing skipped")
         return
     for pattern in ("*.yml", "*.yaml"):
-        for path in ROOT.rglob(pattern):
+        for path in repository_paths(pattern):
             with path.open(encoding="utf-8") as handle:
                 document = yaml.safe_load(handle)
             if document is None:
@@ -285,7 +300,7 @@ def validate_yaml() -> None:
 
 def validate_local_markdown_links() -> None:
     link_pattern = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
-    for path in ROOT.rglob("*.md"):
+    for path in repository_paths("*.md"):
         text = path.read_text(encoding="utf-8")
         for target in link_pattern.findall(text):
             target = target.strip().strip("<>").split("#", 1)[0]
