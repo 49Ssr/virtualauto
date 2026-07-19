@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/external-tool.schema.json",
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "verified_at": "2026-07-20",
   "integration_policy": "record-only",
   "tools": [
@@ -9,32 +9,44 @@
       "repository": "Nenkai/DriveClubFS",
       "default_branch": "master",
       "commit": "836d5f09677dd7f30b92991a0f32e029487ae5cd",
+      "verified_at": "2026-07-20",
+      "record_path": "external/DriveClubFS.md",
       "license_status": "declared-with-anomaly",
-      "integration_status": "not-integrated"
+      "integration_status": "record-only",
+      "notes": "MIT text is present, but the upstream copyright line retains placeholders."
     },
     {
       "id": "EXT-PKGTOOLBOX",
       "repository": "seregonwar/PkgToolBox",
       "default_branch": "main",
       "commit": "eaba67631b88c686d681c790420d66b6e630e529",
+      "verified_at": "2026-07-20",
+      "record_path": "external/PkgToolBox.md",
       "license_status": "unverified",
-      "integration_status": "blocked-pending-license-review"
+      "integration_status": "blocked-pending-license-review",
+      "notes": "Keep as a research record until redistribution and submodule use are clarified."
     },
     {
       "id": "EXT-SHADPKG",
       "repository": "seregonwar/ShadPKG",
       "default_branch": "main",
       "commit": "7a02c1e56b40477b26a660884deda1f3ca8d2eab",
+      "verified_at": "2026-07-20",
+      "record_path": "external/ShadPKG.md",
       "license_status": "MIT",
-      "integration_status": "not-integrated"
+      "integration_status": "record-only",
+      "notes": "Candidate package-analysis instrument; not yet executed by VirtualAuto."
     },
     {
       "id": "EXT-010GAMETEMPLATES",
       "repository": "Nenkai/010GameTemplates",
       "default_branch": "main",
       "commit": "7749b2b6d6f8c66b15e09464e61d2224df21b88a",
+      "verified_at": "2026-07-20",
+      "record_path": "external/010GameTemplates.md",
       "license_status": "MIT",
-      "integration_status": "not-integrated"
+      "integration_status": "record-only",
+      "notes": "Executable format documentation; template claims require sample-based validation."
     }
   ]
 }
