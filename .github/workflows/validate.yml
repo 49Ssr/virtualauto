@@ -1,0 +1,38 @@
+name: Validate repository
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  structure-and-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install validators
+        run: python -m pip install --disable-pip-version-check jsonschema PyYAML
+      - name: Validate JSON, YAML, schemas, and structure
+        env:
+          VIRTUALAUTO_STRICT_VALIDATION: "1"
+        run: python scripts/validate_repository.py
+
+  markdown-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Markdown links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --exclude-mail
+            --accept 200,206,429
+            "**/*.md"
+          fail: true

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/observation.schema.json",
+  "title": "VirtualAuto observation record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "experiment_id", "observation", "evidence_ids", "confidence"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^OBS-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "experiment_id": {"type": "string", "pattern": "^EXP-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "observation": {"type": "string", "minLength": 5},
+    "interpretation": {"type": ["string", "null"]},
+    "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}, "uniqueItems": true},
+    "confidence": {"enum": ["low", "medium", "high"]},
+    "confounders": {"type": "array", "items": {"type": "string"}},
+    "status": {"enum": ["observed", "reproduced", "contradicted", "superseded"]}
+  }
+}

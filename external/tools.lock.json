@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/external-tool.schema.json",
+  "schema_version": "1.0.0",
+  "verified_at": "2026-07-20",
+  "integration_policy": "record-only",
+  "tools": [
+    {
+      "id": "EXT-DRIVECLUBFS",
+      "repository": "Nenkai/DriveClubFS",
+      "default_branch": "master",
+      "commit": "836d5f09677dd7f30b92991a0f32e029487ae5cd",
+      "license_status": "declared-with-anomaly",
+      "integration_status": "not-integrated"
+    },
+    {
+      "id": "EXT-PKGTOOLBOX",
+      "repository": "seregonwar/PkgToolBox",
+      "default_branch": "main",
+      "commit": "eaba67631b88c686d681c790420d66b6e630e529",
+      "license_status": "unverified",
+      "integration_status": "blocked-pending-license-review"
+    },
+    {
+      "id": "EXT-SHADPKG",
+      "repository": "seregonwar/ShadPKG",
+      "default_branch": "main",
+      "commit": "7a02c1e56b40477b26a660884deda1f3ca8d2eab",
+      "license_status": "MIT",
+      "integration_status": "not-integrated"
+    },
+    {
+      "id": "EXT-010GAMETEMPLATES",
+      "repository": "Nenkai/010GameTemplates",
+      "default_branch": "main",
+      "commit": "7749b2b6d6f8c66b15e09464e61d2224df21b88a",
+      "license_status": "MIT",
+      "integration_status": "not-integrated"
+    }
+  ]
+}
