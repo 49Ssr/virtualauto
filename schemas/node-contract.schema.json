@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/node-contract.schema.json",
+  "title": "VirtualAuto Blender node contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "name", "blender_version", "tree_type", "status", "purpose", "inputs", "outputs", "ownership", "engine_support", "diagnostics", "limitations"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^NODE-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "name": {"type": "string", "minLength": 3},
+    "blender_version": {"type": "string", "pattern": "^[0-9]+\.[0-9]+\.[0-9]+$"},
+    "tree_type": {"enum": ["ShaderNodeTree", "GeometryNodeTree", "CompositorNodeTree"]},
+    "status": {"enum": ["P0-idea", "P1-specified", "P2-buildable", "P3-executed", "P4-observed", "P5-production-qualified", "rejected", "superseded"]},
+    "purpose": {"type": "string", "minLength": 10},
+    "inputs": {"type": "array", "items": {"$ref": "#/$defs/socket"}},
+    "outputs": {"type": "array", "items": {"$ref": "#/$defs/socket"}},
+    "ownership": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 3}},
+    "engine_support": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Cycles", "EEVEE"],
+      "properties": {
+        "Cycles": {"enum": ["supported", "partial", "unsupported", "unverified"]},
+        "EEVEE": {"enum": ["supported", "partial", "unsupported", "unverified"]}
+      }
+    },
+    "dependencies": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "diagnostics": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 3}},
+    "performance_notes": {"type": ["string", "null"]},
+    "limitations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 3}},
+    "experiment_ids": {"type": "array", "items": {"type": "string", "pattern": "^EXP-[A-Z0-9]+(?:-[A-Z0-9]+)+$"}, "uniqueItems": true}
+  },
+  "$defs": {
+    "socket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "data_type", "unit_or_space", "description"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "data_type": {"enum": ["Float", "Vector", "Color", "Shader", "Geometry", "Boolean", "Integer", "String", "Object", "Material", "Image", "Collection"]},
+        "unit_or_space": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 3}
+      }
+    }
+  }
+}
