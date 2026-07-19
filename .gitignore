@@ -1,22 +1,54 @@
-# Large extracted game assets
-raw_assets/
-extracted/
-converted_assets/
+# Extracted or proprietary source data
+/raw_assets/
+/extracted/
+/converted_assets/
+/package_dumps/
+/reference_capture/private/
 
-# Game/package files
+# Game and package containers
 *.pkg
 *.dat
 *.idx
+*.ndx
 *.rpk
 
-# Large DCC/render files
+# Large DCC, mesh, texture, and render artifacts
+*.blend
 *.blend1
 *.fbx
 *.obj
+*.gltf
+*.glb
 *.dds
 *.exr
+*.hdr
+*.mov
+*.mp4
 
-# Temporary files
+# Local evidence caches and generated outputs
+/evidence/artifacts/
+/build/
+/dist/
+/out/
+/tmp/
+
+# Python
 __pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# IDE and operating-system metadata
+.vs/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Temporary and diagnostic files
 *.tmp
 *.log
+*.bak
