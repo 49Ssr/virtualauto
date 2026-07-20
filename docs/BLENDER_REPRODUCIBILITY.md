@@ -11,6 +11,7 @@ factory settings and avoid user startup files:
 
 ```text
 blender --background --factory-startup scene.blend \
+  --python-exit-code 1 \
   --python blender/scripts/capture_runtime_manifest.py -- \
   --id RUN-PROJECT-TEST-001 \
   --output evidence/manifests/blender-run.json
@@ -21,6 +22,19 @@ the explicit `--allow-version-mismatch` research override. That override must
 not be described as baseline validation. It also refuses paths outside the
 repository and will not overwrite an existing manifest unless `--overwrite` is
 supplied intentionally.
+
+The packaged smoke harness creates an original temporary scene and captures a
+runtime manifest plus structural inventory:
+
+```text
+virtualauto blender-smoke
+```
+
+Blender evaluates command-line options in order, so `--python-exit-code 1`
+must appear before `--python`. The first local execution caught this exact
+failure-propagation risk and also confirmed that Blender 5.0.1 exposes EEVEE as
+the `BLENDER_EEVEE` RNA enum. These are runtime observations, not assumptions
+carried over from an older Blender release.
 
 ## Manifest boundary
 

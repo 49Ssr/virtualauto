@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/blender-toolchain.schema.json",
+  "title": "VirtualAuto Blender toolchain acquisition record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "id", "version", "build_hash", "platform", "archive_url", "published_sha256", "verified_sha256", "verified_at", "custody"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^BLD-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "version": {"type": "string"},
+    "build_hash": {"type": "string", "pattern": "^[a-f0-9]{12,40}$"},
+    "platform": {"type": "string"},
+    "archive_url": {"type": "string", "format": "uri"},
+    "checksum_url": {"type": "string", "format": "uri"},
+    "published_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "verified_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "verified_at": {"type": "string", "format": "date-time"},
+    "custody": {"enum": ["temporary-local", "installed", "unavailable"]},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  }
+}

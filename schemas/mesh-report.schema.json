@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/mesh-report.schema.json",
+  "title": "VirtualAuto non-mutating Blender mesh report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "id", "captured_at", "blender_version", "source", "scene", "objects", "materials", "images", "scope"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^RPT-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "blender_version": {"type": "string"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["basename", "sha256"],
+      "properties": {
+        "basename": {"type": ["string", "null"]},
+        "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "unit_system", "unit_scale_length", "object_count"],
+      "properties": {
+        "name": {"type": "string"},
+        "unit_system": {"type": "string"},
+        "unit_scale_length": {"type": "number"},
+        "object_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "objects": {"type": "array", "items": {"type": "object"}},
+    "materials": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "images": {"type": "array", "items": {"type": "object"}},
+    "scope": {"const": "non-mutating structural inventory; no visual-quality claim"}
+  }
+}

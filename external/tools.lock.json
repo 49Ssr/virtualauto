@@ -2,7 +2,7 @@
   "$schema": "../schemas/external-tool.schema.json",
   "schema_version": "1.1.0",
   "verified_at": "2026-07-20",
-  "integration_policy": "record-only",
+  "integration_policy": "mixed",
   "tools": [
     {
       "id": "EXT-DRIVECLUBFS",
@@ -13,6 +13,7 @@
       "record_path": "external/DriveClubFS.md",
       "license_status": "declared-with-anomaly",
       "integration_status": "record-only",
+      "submodule_path": null,
       "notes": "MIT text is present, but the upstream copyright line retains placeholders."
     },
     {
@@ -24,6 +25,7 @@
       "record_path": "external/PkgToolBox.md",
       "license_status": "unverified",
       "integration_status": "blocked-pending-license-review",
+      "submodule_path": null,
       "notes": "Keep as a research record until redistribution and submodule use are clarified."
     },
     {
@@ -34,8 +36,9 @@
       "verified_at": "2026-07-20",
       "record_path": "external/ShadPKG.md",
       "license_status": "MIT",
-      "integration_status": "record-only",
-      "notes": "Candidate package-analysis instrument; not yet executed by VirtualAuto."
+      "integration_status": "submodule",
+      "submodule_path": "external/vendor/ShadPKG",
+      "notes": "Pinned instrument; upstream functional and security claims remain unverified by VirtualAuto."
     },
     {
       "id": "EXT-010GAMETEMPLATES",
@@ -45,8 +48,9 @@
       "verified_at": "2026-07-20",
       "record_path": "external/010GameTemplates.md",
       "license_status": "MIT",
-      "integration_status": "record-only",
-      "notes": "Executable format documentation; template claims require sample-based validation."
+      "integration_status": "submodule",
+      "submodule_path": "external/vendor/010GameTemplates",
+      "notes": "Pinned executable format documentation; template claims require sample-based validation."
     }
   ]
 }

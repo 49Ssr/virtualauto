@@ -12,6 +12,10 @@
   committed
 - Retained evidence: none
 - Archaeology plan: [F40 target plan](../../knowledge/asset_archaeology/driveclub/F40_TARGET.md)
+- Private-source registration command: implemented and unit-tested
+- Blender structural inventory: executed successfully on a synthetic 5.0.1 fixture
+- ShadPKG and 010GameTemplates: pinned as exact-commit submodules; not yet
+  validated against a lawful DriveClub sample
 
 ## Direct user observations
 
@@ -59,6 +63,9 @@ No cause is preferred until the existing export is registered and diagnosed.
 4. When original files are available, catalogue the F40 resource dependency
    graph before writing a model converter.
 
+The operational tooling is ready for step 1. No F40 record has been fabricated:
+the private export and original package/root remain absent from this checkout.
+
 ## Changelog
 
 ### 2026-07-20
@@ -67,3 +74,5 @@ No cause is preferred until the existing export is registered and diagnosed.
 - Recorded the existing export only as an unverified user observation.
 - Deferred material recreation and geometry cleanup until source semantics can
   be separated from exporter damage.
+- Added a tested private-source registrar and non-mutating Blender 5.0.1
+  inventory path without claiming that either has run on the F40.

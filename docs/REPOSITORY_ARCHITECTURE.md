@@ -73,8 +73,10 @@ cost.
 ## Large and restricted files
 
 Raw packages, extracted resources, third-party models, textures, captures,
-large renders, and private `.blend` files remain outside Git. Repository records
-may store checksums, byte sizes, private storage references, and lawful small
+large renders, and private `.blend` files remain outside Git. A narrow Git LFS
+exception exists only for original regression scenes under the paths defined in
+[the binary asset policy](BINARY_ASSET_POLICY.md). Repository records may store
+checksums, byte sizes, opaque private-storage references, and lawful small
 derivatives. See [rights and asset boundaries](RIGHTS_AND_ASSET_BOUNDARIES.md).
 
 ## Change control

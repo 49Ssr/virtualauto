@@ -6,7 +6,7 @@
 - Default branch: `main`
 - Verified upstream head: `7749b2b6d6f8c66b15e09464e61d2224df21b88a`
 - Verified on: 2026-07-20
-- Integration state: record only; not yet a submodule
+- Integration state: pinned submodule at `external/vendor/010GameTemplates`
 - License: MIT, as declared in the upstream `LICENSE` file
 
 ## Purpose

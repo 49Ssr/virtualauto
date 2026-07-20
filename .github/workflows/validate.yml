@@ -14,9 +14,13 @@ concurrency:
 
 jobs:
   validate:
-    name: Structure, schemas, references, and policy
-    runs-on: ubuntu-latest
+    name: Python and repository (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Check out repository
@@ -27,16 +31,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install validation dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+      - name: Install VirtualAuto
+        run: python -m pip install --disable-pip-version-check -e .
 
-      - name: Regenerate retrieval index
-        run: python scripts/build_master_index.py
+      - name: Compile Python entry points
+        run: python -m compileall -q src scripts tests blender/scripts
+
+      - name: Run unit and repository tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Regenerate retrieval index through packaged command
+        run: virtualauto build-index
 
       - name: Verify retrieval index is current
         run: git diff --exit-code -- generated/automotive_master.index.json
 
-      - name: Run repository validator
-        env:
-          VIRTUALAUTO_STRICT_VALIDATION: "1"
-        run: python scripts/validate_repository.py
+      - name: Run strict repository validator through packaged command
+        run: virtualauto validate

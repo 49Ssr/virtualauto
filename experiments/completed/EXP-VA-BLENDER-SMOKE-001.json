@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schemas/experiment.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EXP-VA-BLENDER-SMOKE-001",
+  "title": "Blender 5.0.1 structural evidence smoke test",
+  "domain": "Blender reproducibility infrastructure",
+  "status": "accepted",
+  "question": "Can a fresh Blender 5.0.1 process build a synthetic scene and produce schema-backed runtime and structural evidence?",
+  "hypothesis": "Guarded scripts can construct and inspect a minimal original scene without relying on private or automotive source assets.",
+  "source_ids": [],
+  "assumptions": [
+    "The downloaded executable matches the published Blender 5.0.1 stable archive hash.",
+    "Structural execution does not establish visual or physical automotive accuracy."
+  ],
+  "blender_versions": ["5.0.1 a3db93c5b259"],
+  "render_engines": ["EEVEE"],
+  "controlled_variables": {
+    "unit_system": "METRIC",
+    "unit_scale_length": 1.0,
+    "object_count": 1,
+    "source_data": "synthetic-original"
+  },
+  "procedure": [
+    "Launch Blender 5.0.1 with factory startup and Python failure propagation enabled.",
+    "Create a four-vertex mesh with a UV layer, colour attribute, face attribute, material, custom property, and Bevel modifier.",
+    "Save the temporary scene outside the repository.",
+    "Open the scene in fresh Blender processes to capture runtime metadata and a non-mutating structural inventory.",
+    "Validate the retained JSON against repository schemas."
+  ],
+  "acceptance_criteria": [
+    "All Blender processes return zero and identify version 5.0.1.",
+    "The inventory recovers the expected mesh, UV, attributes, material, custom property, and modifier.",
+    "Strict repository validation accepts all retained evidence and references."
+  ],
+  "failure_criteria": [
+    "A script error returns a successful process code.",
+    "The scene or report escapes its allowed output boundary.",
+    "Expected structural data is absent or a schema fails."
+  ],
+  "required_evidence_types": ["mesh-report", "log", "other"],
+  "result": "Accepted for structural infrastructure only. Blender 5.0.1 created the synthetic fixture and fresh processes captured the expected structure.",
+  "decision": "accept",
+  "supersedes": []
+}

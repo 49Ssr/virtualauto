@@ -12,10 +12,12 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 from collections import defaultdict
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 try:
     import jsonschema
@@ -41,6 +43,8 @@ REQUIRED_PATHS = (
     "docs/BLENDER_REPRODUCIBILITY.md",
     "docs/LICENSING_STATUS.md",
     "docs/SCHEMA_LIFECYCLE.md",
+    "docs/BINARY_ASSET_POLICY.md",
+    "docs/OPERATIONAL_BASELINE.md",
     "knowledge/README.md",
     "external/README.md",
     "external/tools.lock.json",
@@ -54,6 +58,9 @@ REQUIRED_PATHS = (
     "schemas/claim.schema.json",
     "schemas/node-contract.schema.json",
     "schemas/blender-run.schema.json",
+    "schemas/blender-toolchain.schema.json",
+    "schemas/binary-fixture.schema.json",
+    "schemas/mesh-report.schema.json",
     "schemas/canonical-artifact.schema.json",
     "schemas/master-index.schema.json",
     "knowledge/automotive_materials/Automotive_Body_RnD_Master.md",
@@ -63,9 +70,22 @@ REQUIRED_PATHS = (
     "requirements-validation.txt",
     "scripts/build_master_index.py",
     "blender/scripts/capture_runtime_manifest.py",
+    "blender/scripts/create_smoke_scene.py",
+    "blender/scripts/asset_inventory.py",
+    "blender/toolchains/BLD-BLENDER-501-WINDOWS-X64.json",
+    "blender/assets/README.md",
+    "tests/README.md",
+    "tests/fixtures/blender/README.md",
+    "pyproject.toml",
     "examples/README.md",
 )
-FORBIDDEN_DIRECTORIES = {".vs", "raw_assets", "extracted", "converted_assets", "package_dumps"}
+FORBIDDEN_DIRECTORIES = {
+    ".vs",
+    "raw_assets",
+    "extracted",
+    "converted_assets",
+    "package_dumps",
+}
 VALIDATION_EXCLUDED_DIRECTORIES = {
     ".git",
     ".mypy_cache",
@@ -88,9 +108,10 @@ FORBIDDEN_SUFFIXES = {
     ".glb",
     ".exr",
     ".hdr",
-    ".blend",
     ".blend1",
 }
+ALLOWED_BLEND_PREFIXES = ("blender/assets/", "tests/fixtures/blender/")
+LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
 ID_KIND_BY_PREFIX = {
     "EXP-": "experiment",
     "EVD-": "evidence",
@@ -122,10 +143,7 @@ def read_json(path: Path) -> dict[str, Any]:
             data = json.load(handle)
     except json.JSONDecodeError as error:
         relative = path.relative_to(ROOT)
-        fail(
-            f"Invalid JSON in {relative}:{error.lineno}:{error.colno}: "
-            f"{error.msg}"
-        )
+        fail(f"Invalid JSON in {relative}:{error.lineno}:{error.colno}: {error.msg}")
     if not isinstance(data, dict):
         fail(f"Expected JSON object: {path.relative_to(ROOT)}")
     return data
@@ -148,6 +166,23 @@ def validate_no_prohibited_artifacts() -> None:
                 fail(f"Symlink escapes repository: {relative}")
         if any(part in FORBIDDEN_DIRECTORIES for part in relative.parts):
             fail(f"Prohibited repository directory: {relative}")
+        if path.is_file() and path.suffix.lower() == ".blend":
+            normalized = relative.as_posix()
+            if not normalized.startswith(ALLOWED_BLEND_PREFIXES):
+                fail(f"Prohibited Blender asset location: {relative}")
+            indexed = subprocess.run(
+                ["git", "show", f":{normalized}"],
+                cwd=ROOT,
+                capture_output=True,
+                check=False,
+            )
+            if indexed.returncode != 0 or not indexed.stdout.startswith(
+                LFS_POINTER_PREFIX
+            ):
+                fail(f"Blender fixture must be stored as a Git LFS pointer: {relative}")
+            provenance = path.with_suffix(path.suffix + ".provenance.json")
+            if not provenance.is_file():
+                fail(f"Blender fixture lacks adjacent provenance: {relative}")
         if path.is_file() and path.suffix.lower() in FORBIDDEN_SUFFIXES:
             fail(f"Prohibited source or large binary artifact: {relative}")
 
@@ -309,7 +344,9 @@ def validate_manifest_instances(
         validator = jsonschema.Draft202012Validator(
             schema, format_checker=jsonschema.FormatChecker()
         )
-        errors = sorted(validator.iter_errors(instance), key=lambda error: list(error.path))
+        errors = sorted(
+            validator.iter_errors(instance), key=lambda error: list(error.path)
+        )
         if errors:
             detail = "; ".join(
                 f"{'/'.join(map(str, error.path)) or '<root>'}: {error.message}"
@@ -343,7 +380,10 @@ def validate_record_references(manifests: list[tuple[Path, dict[str, Any]]]) -> 
             continue
         if record_id in records:
             previous = records[record_id][1].relative_to(ROOT)
-            fail(f"Duplicate record ID {record_id}: {previous} and {path.relative_to(ROOT)}")
+            fail(
+                f"Duplicate record ID {record_id}: {previous} and "
+                f"{path.relative_to(ROOT)}"
+            )
         records[record_id] = (kind, path, record)
         by_kind[kind].add(record_id)
 
@@ -408,7 +448,30 @@ def validate_external_tool_records() -> None:
             fail(f"Invalid commit pin for {tool['id']}")
         record_path = ROOT / tool["record_path"]
         if not record_path.is_file():
-            fail(f"Missing external tool record for {tool['id']}: {tool['record_path']}")
+            fail(
+                f"Missing external tool record for {tool['id']}: {tool['record_path']}"
+            )
+        submodule_path = tool.get("submodule_path")
+        if tool["integration_status"] == "submodule":
+            if not submodule_path:
+                fail(f"Submodule tool has no path: {tool['id']}")
+            result = subprocess.run(
+                ["git", "ls-files", "--stage", "--", submodule_path],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            fields = result.stdout.strip().split()
+            if result.returncode != 0 or len(fields) < 3 or fields[0] != "160000":
+                fail(f"Missing Git submodule entry for {tool['id']}: {submodule_path}")
+            if fields[1] != tool["commit"]:
+                fail(
+                    f"Submodule pin mismatch for {tool['id']}: "
+                    f"lock has {tool['commit']}, Git has {fields[1]}"
+                )
+        elif submodule_path is not None:
+            fail(f"Non-submodule tool declares a submodule path: {tool['id']}")
 
 
 def validate_yaml() -> None:
@@ -437,7 +500,10 @@ def validate_local_markdown_links() -> None:
             try:
                 resolved.relative_to(ROOT.resolve())
             except ValueError:
-                fail(f"Local link escapes repository: {path.relative_to(ROOT)} -> {target}")
+                fail(
+                    f"Local link escapes repository: {path.relative_to(ROOT)} "
+                    f"-> {target}"
+                )
             if not resolved.exists():
                 fail(f"Broken local link: {path.relative_to(ROOT)} -> {target}")
 

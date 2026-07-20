@@ -25,6 +25,13 @@
 *.mov
 *.mp4
 
+# Narrow exception for original, reviewed Git-LFS regression assets. Validation
+# rejects raw Git blobs and any .blend outside these two directories.
+!blender/assets/
+!blender/assets/**/*.blend
+!tests/fixtures/blender/
+!tests/fixtures/blender/**/*.blend
+
 # Local evidence caches and generated outputs
 /evidence/artifacts/
 /build/
@@ -40,6 +47,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+*.egg-info/
 
 # IDE and operating-system metadata
 .vs/

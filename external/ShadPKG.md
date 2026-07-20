@@ -6,7 +6,7 @@
 - Default branch: `main`
 - Verified upstream head: `7a02c1e56b40477b26a660884deda1f3ca8d2eab`
 - Verified on: 2026-07-20
-- Integration state: record only; not yet a submodule
+- Integration state: pinned submodule at `external/vendor/ShadPKG`
 - License: MIT, as declared in the upstream README and `LICENSE` file
 
 ## Purpose
@@ -39,5 +39,6 @@ multi-threaded extraction.
 
 ## Intended role
 
-Candidate package-analysis/extraction stage whose output may feed a
-DriveClub-specific filesystem pipeline after independent validation.
+Pinned package-analysis/extraction instrument whose output may feed a
+DriveClub-specific filesystem pipeline after independent validation. Pinning
+does not validate its cryptographic, safety, or compatibility claims.

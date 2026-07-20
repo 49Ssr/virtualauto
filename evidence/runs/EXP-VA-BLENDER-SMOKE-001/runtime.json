@@ -1,0 +1,50 @@
+{
+  "$schema": "../../../schemas/blender-run.schema.json",
+  "schema_version": "1.0.0",
+  "id": "RUN-VA-BLENDER-SMOKE-001",
+  "status": "captured",
+  "captured_at": "2026-07-20T01:17:08.852456+00:00",
+  "blender": {
+    "version": "5.0.1",
+    "version_tuple": [
+      5,
+      0,
+      1
+    ],
+    "build_hash": "a3db93c5b259",
+    "build_branch": "blender-v5.0-release",
+    "build_type": "Release"
+  },
+  "host": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python_version": "3.11.13"
+  },
+  "scene": {
+    "name": "VA_SmokeScene",
+    "source_path": "virtualauto-blender-5.0.1-smoke.blend",
+    "source_sha256": "3924d0e37746e8576c36b9bfc223e0d1f8401f1a627f2e1e2281ae3f4b059846"
+  },
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "resolution_x": 640,
+    "resolution_y": 360,
+    "resolution_percentage": 100,
+    "frame": 1,
+    "samples": 4096,
+    "denoising": true,
+    "device": "CPU"
+  },
+  "colour_management": {
+    "display_device": "sRGB",
+    "view_transform": "AgX",
+    "look": "None",
+    "exposure": 0.0,
+    "gamma": 1.0,
+    "ocio_config_sha256": null
+  },
+  "evidence_state": "runtime-metadata-only",
+  "notes": [
+    "This manifest records runtime metadata only; it is not render or visual evidence.",
+    "ocio_config_sha256 records only a checksum of an explicit OCIO override."
+  ]
+}
