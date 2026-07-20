@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../lab/schemas/claim.schema.json",
+  "schema_version": "1.0.0",
+  "id": "CLM-VA-BLENDER-SMOKE-001",
+  "statement": "VirtualAuto can execute its minimal structural evidence path in Blender 5.0.1 on the tested Windows host.",
+  "scope": "Synthetic fixture creation, runtime capture, and structural inventory",
+  "status": "validated",
+  "source_ids": [],
+  "evidence_ids": ["EVD-VA-BLENDER-RUNTIME-001", "EVD-VA-BLENDER-INVENTORY-001", "EVD-VA-BLENDER-LOG-001"],
+  "experiment_ids": ["EXP-VA-BLENDER-SMOKE-001"],
+  "confidence": "high",
+  "confidence_basis": "The expected attributes were recovered by fresh Blender processes and the records pass strict validation.",
+  "boundaries": [
+    "Validated only for Blender 5.0.1 build a3db93c5b259 on the recorded Windows host.",
+    "Does not validate automotive assets, rendering quality, material physics, package extraction, or cross-platform Blender execution."
+  ],
+  "contradictions": [],
+  "supersedes": []
+}

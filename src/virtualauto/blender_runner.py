@@ -91,7 +91,7 @@ def run_smoke(
     temporary_scene = temporary_root / "virtualauto-blender-5.0.1-smoke.blend"
     create = run_blender_script(
         blender=blender,
-        script=root / "blender/scripts/create_smoke_scene.py",
+        script=root / "workflows/blender/scripts/create_smoke_scene.py",
         script_args=["--output", str(temporary_scene), "--overwrite"],
         cwd=root,
     )
@@ -113,14 +113,14 @@ def run_smoke(
     capture = run_blender_script(
         blender=blender,
         scene=temporary_scene,
-        script=root / "blender/scripts/capture_runtime_manifest.py",
+        script=root / "workflows/blender/scripts/capture_runtime_manifest.py",
         script_args=capture_args,
         cwd=root,
     )
     inspect = run_blender_script(
         blender=blender,
         scene=temporary_scene,
-        script=root / "blender/scripts/asset_inventory.py",
+        script=root / "workflows/blender/scripts/asset_inventory.py",
         script_args=inventory_args,
         cwd=root,
     )

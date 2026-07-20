@@ -113,9 +113,9 @@ def diagnose(root: Path | None = None) -> dict[str, object]:
             "build_artifact_available": driveclub_artifact.is_file(),
         },
         "canonical_master_available": (
-            root / "knowledge/automotive_materials/Automotive_Body_RnD_Master.md"
+            root / "research/automotive_materials/Automotive_Body_RnD_Master.md"
         ).is_file(),
         "master_index_available": (
-            root / "generated/automotive_master.index.json"
+            root / "research/indexes/automotive_master.index.json"
         ).is_file(),
     }

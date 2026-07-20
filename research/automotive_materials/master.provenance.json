@@ -1,0 +1,23 @@
+{
+  "$schema": "../../lab/schemas/canonical-artifact.schema.json",
+  "schema_version": "1.0.0",
+  "id": "ART-AUTOMOTIVE-BODY-RND-MASTER-V5",
+  "title": "Automotive Body R&D Master v5 Practical Unified",
+  "repository_path": "research/automotive_materials/Automotive_Body_RnD_Master.md",
+  "source_filename": "Automotive_Body_RnD_Master_v5_PRACTICAL_UNIFIED.md",
+  "sha256": "62f0a3663811b7b7259dcd194798c2345e1475c7bcd2c387bc34630dd05f774d",
+  "byte_size": 1874215,
+  "line_count": 56769,
+  "content_status": "canonical-byte-preserved-import",
+  "transfer_method": "byte-for-byte-copy",
+  "verification": {
+    "checksum_recalculated": true,
+    "utf8_decoded": true,
+    "sensitive_string_scan": "passed-pattern-scan"
+  },
+  "notes": [
+    "The import preserves the supplied artifact byte for byte; historical statements retain their original evidence labels.",
+    "The pattern scan found no private keys, GitHub tokens, OpenAI-style keys, embedded base64 payloads, local user paths, or email addresses.",
+    "This provenance record does not convert referenced third-party material into repository-owned content or validate every retained external URL."
+  ]
+}

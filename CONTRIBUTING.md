@@ -31,7 +31,7 @@ provenance.
 ## Machine-readable records
 
 JSON records must declare a local `$schema` and pass
-`scripts/validate_repository.py`. IDs are stable once published. Corrections
+`dev/scripts/validate_repository.py`. IDs are stable once published. Corrections
 should update status or create a superseding record rather than silently
 reusing an ID for a different meaning.
 
@@ -55,7 +55,7 @@ state before adding a submodule or depending on behaviour.
 python -m pip install -e .
 virtualauto build-index
 virtualauto validate
-python -m unittest discover -s tests -v
+python -m unittest discover -s dev/tests -v
 ```
 
 A passing validator proves structural consistency only. It does not prove a

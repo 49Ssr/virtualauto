@@ -27,13 +27,13 @@
 
 # Narrow exception for original, reviewed Git-LFS regression assets. Validation
 # rejects raw Git blobs and any .blend outside these two directories.
-!blender/assets/
-!blender/assets/**/*.blend
-!tests/fixtures/blender/
-!tests/fixtures/blender/**/*.blend
+!workflows/blender/assets/
+!workflows/blender/assets/**/*.blend
+!dev/tests/fixtures/blender/
+!dev/tests/fixtures/blender/**/*.blend
 
 # Local evidence caches and generated outputs
-/evidence/artifacts/
+/lab/evidence/artifacts/
 /build/
 /dist/
 /out/

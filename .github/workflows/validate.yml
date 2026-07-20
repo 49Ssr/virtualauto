@@ -38,16 +38,16 @@ jobs:
         run: python -m pip install --disable-pip-version-check -e .
 
       - name: Compile Python entry points
-        run: python -m compileall -q src scripts tests blender/scripts
+        run: python -m compileall -q src dev/scripts dev/tests workflows/blender/scripts
 
       - name: Run unit and repository tests
-        run: python -m unittest discover -s tests -v
+        run: python -m unittest discover -s dev/tests -v
 
       - name: Regenerate retrieval index through packaged command
         run: virtualauto build-index
 
       - name: Verify retrieval index is current
-        run: git diff --exit-code -- generated/automotive_master.index.json
+        run: git diff --exit-code -- research/indexes/automotive_master.index.json
 
       - name: Run strict repository validator through packaged command
         run: virtualauto validate

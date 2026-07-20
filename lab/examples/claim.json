@@ -1,0 +1,26 @@
+{
+  "$schema": "../schemas/claim.schema.json",
+  "schema_version": "1.0.0",
+  "id": "CLM-DC-F40-UV-001",
+  "statement": "A DriveClub-derived vehicle import must preserve every available UV stream until material metadata and controlled tests justify a semantic selection.",
+  "scope": "DriveClub semantic import policy",
+  "status": "hypothesis",
+  "source_ids": [
+    "EXT-DRIVECLUBFS",
+    "EXT-010GAMETEMPLATES"
+  ],
+  "evidence_ids": [
+    "EVD-DC-F40-UV-001"
+  ],
+  "experiment_ids": [
+    "EXP-DC-F40-UV-001"
+  ],
+  "confidence": "medium",
+  "confidence_basis": "The policy prevents destructive data loss, but no VirtualAuto sample has yet established the complete UV semantics.",
+  "boundaries": [
+    "It does not assert that every UV stream is used by every material.",
+    "It does not establish which stream is active for any specific source asset."
+  ],
+  "contradictions": [],
+  "supersedes": []
+}
