@@ -8,6 +8,7 @@ or Blender implementations are scientifically correct.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -37,6 +38,9 @@ REQUIRED_PATHS = (
     "docs/REPOSITORY_ARCHITECTURE.md",
     "docs/AI_RETRIEVAL_PROTOCOL.md",
     "docs/RIGHTS_AND_ASSET_BOUNDARIES.md",
+    "docs/BLENDER_REPRODUCIBILITY.md",
+    "docs/LICENSING_STATUS.md",
+    "docs/SCHEMA_LIFECYCLE.md",
     "knowledge/README.md",
     "external/README.md",
     "external/tools.lock.json",
@@ -49,9 +53,28 @@ REQUIRED_PATHS = (
     "schemas/unknown-field.schema.json",
     "schemas/claim.schema.json",
     "schemas/node-contract.schema.json",
+    "schemas/blender-run.schema.json",
+    "schemas/canonical-artifact.schema.json",
+    "schemas/master-index.schema.json",
+    "knowledge/automotive_materials/Automotive_Body_RnD_Master.md",
+    "knowledge/automotive_materials/master.provenance.json",
+    "generated/automotive_master.index.json",
+    "generated/README.md",
+    "requirements-validation.txt",
+    "scripts/build_master_index.py",
+    "blender/scripts/capture_runtime_manifest.py",
     "examples/README.md",
 )
 FORBIDDEN_DIRECTORIES = {".vs", "raw_assets", "extracted", "converted_assets", "package_dumps"}
+VALIDATION_EXCLUDED_DIRECTORIES = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "venv",
+}
 FORBIDDEN_SUFFIXES = {
     ".pkg",
     ".dat",
@@ -85,17 +108,24 @@ def fail(message: str) -> None:
 
 
 def repository_paths(pattern: str) -> Iterator[Path]:
-    """Yield repository paths while excluding Git's own object database."""
+    """Yield project paths while excluding local tooling environments."""
     for path in ROOT.rglob(pattern):
         relative = path.relative_to(ROOT)
-        if ".git" in relative.parts:
+        if any(part in VALIDATION_EXCLUDED_DIRECTORIES for part in relative.parts):
             continue
         yield path
 
 
 def read_json(path: Path) -> dict[str, Any]:
-    with path.open(encoding="utf-8") as handle:
-        data = json.load(handle)
+    try:
+        with path.open(encoding="utf-8") as handle:
+            data = json.load(handle)
+    except json.JSONDecodeError as error:
+        relative = path.relative_to(ROOT)
+        fail(
+            f"Invalid JSON in {relative}:{error.lineno}:{error.colno}: "
+            f"{error.msg}"
+        )
     if not isinstance(data, dict):
         fail(f"Expected JSON object: {path.relative_to(ROOT)}")
     return data
@@ -125,6 +155,103 @@ def validate_no_prohibited_artifacts() -> None:
 def validate_json_syntax() -> None:
     for path in repository_paths("*.json"):
         read_json(path)
+
+
+def validate_canonical_artifacts() -> None:
+    for path in repository_paths("*.provenance.json"):
+        record = read_json(path)
+        repository_path = record.get("repository_path")
+        expected_sha256 = record.get("sha256")
+        expected_byte_size = record.get("byte_size")
+        expected_line_count = record.get("line_count")
+        if not all(
+            isinstance(value, expected_type)
+            for value, expected_type in (
+                (repository_path, str),
+                (expected_sha256, str),
+                (expected_byte_size, int),
+                (expected_line_count, int),
+            )
+        ):
+            fail(f"Incomplete canonical provenance record: {path.relative_to(ROOT)}")
+
+        artifact = (ROOT / repository_path).resolve()
+        try:
+            artifact.relative_to(ROOT.resolve())
+        except ValueError:
+            fail(f"Canonical artifact escapes repository: {path.relative_to(ROOT)}")
+        if not artifact.is_file():
+            fail(f"Canonical artifact is missing: {repository_path}")
+
+        payload = artifact.read_bytes()
+        actual_sha256 = hashlib.sha256(payload).hexdigest()
+        if actual_sha256 != expected_sha256:
+            fail(
+                f"Canonical artifact checksum mismatch: {repository_path}; "
+                f"expected {expected_sha256}, got {actual_sha256}"
+            )
+        if len(payload) != expected_byte_size:
+            fail(
+                f"Canonical artifact byte-size mismatch: {repository_path}; "
+                f"expected {expected_byte_size}, got {len(payload)}"
+            )
+        try:
+            text = payload.decode("utf-8")
+        except UnicodeDecodeError as error:
+            fail(f"Canonical artifact is not UTF-8: {repository_path}: {error}")
+        actual_line_count = len(text.splitlines())
+        if actual_line_count != expected_line_count:
+            fail(
+                f"Canonical artifact line-count mismatch: {repository_path}; "
+                f"expected {expected_line_count}, got {actual_line_count}"
+            )
+
+
+def validate_master_index() -> None:
+    provenance = read_json(
+        ROOT / "knowledge/automotive_materials/master.provenance.json"
+    )
+    index = read_json(ROOT / "generated/automotive_master.index.json")
+    expected = {
+        "canonical_artifact_id": provenance["id"],
+        "source_path": provenance["repository_path"],
+        "source_sha256": provenance["sha256"],
+        "source_byte_size": provenance["byte_size"],
+        "source_line_count": provenance["line_count"],
+    }
+    for key, value in expected.items():
+        if index.get(key) != value:
+            fail(f"Master index {key} does not match canonical provenance")
+
+    sections = index.get("sections")
+    if not isinstance(sections, list) or index.get("section_count") != len(sections):
+        fail("Master index section_count does not match its sections array")
+
+    section_ids = {section.get("id") for section in sections}
+    if None in section_ids or len(section_ids) != len(sections):
+        fail("Master index contains missing or duplicate section IDs")
+    retrieval_keys = {section.get("retrieval_key") for section in sections}
+    if None in retrieval_keys or len(retrieval_keys) != len(sections):
+        fail("Master index contains missing or duplicate retrieval keys")
+
+    line_count = provenance["line_count"]
+    by_id = {section["id"]: section for section in sections}
+    for section in sections:
+        start = section.get("line_start")
+        end = section.get("line_end")
+        if not isinstance(start, int) or not isinstance(end, int):
+            fail(f"Master index section has invalid line range: {section.get('id')}")
+        if not 1 <= start <= end <= line_count:
+            fail(f"Master index section range is outside source: {section['id']}")
+        parent_id = section.get("parent_id")
+        if parent_id is not None:
+            parent = by_id.get(parent_id)
+            if parent is None:
+                fail(f"Master index section has missing parent: {section['id']}")
+            if parent["level"] >= section["level"]:
+                fail(f"Master index hierarchy is invalid: {section['id']}")
+            if not parent["line_start"] < start <= parent["line_end"]:
+                fail(f"Master index child falls outside parent range: {section['id']}")
 
 
 def validate_schema_documents() -> dict[Path, dict[str, Any]]:
@@ -330,6 +457,8 @@ def main() -> int:
         validate_required_structure()
         validate_no_prohibited_artifacts()
         validate_json_syntax()
+        validate_canonical_artifacts()
+        validate_master_index()
         schemas = validate_schema_documents()
         manifests = validate_manifest_instances(schemas)
         validate_record_references(manifests)

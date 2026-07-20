@@ -10,7 +10,7 @@
     "schema_version": {"const": "1.0.0"},
     "id": {"type": "string", "pattern": "^NODE-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
     "name": {"type": "string", "minLength": 3},
-    "blender_version": {"type": "string", "pattern": "^[0-9]+\.[0-9]+\.[0-9]+$"},
+    "blender_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
     "tree_type": {"enum": ["ShaderNodeTree", "GeometryNodeTree", "CompositorNodeTree"]},
     "status": {"enum": ["P0-idea", "P1-specified", "P2-buildable", "P3-executed", "P4-observed", "P5-production-qualified", "rejected", "superseded"]},
     "purpose": {"type": "string", "minLength": 10},

@@ -48,9 +48,16 @@ limitation only in a distant appendix.
 ## Canonical and generated knowledge
 
 The unified automotive master remains authoritative. Generated domain files are
-retrieval views and must carry source commit, checksum, section ID, and line
-range. When a generated view and canonical source disagree, stop and report the
+retrieval views and must carry the source checksum, section ID, line range, and
+generator version. Git supplies the commit identity of both source and index.
+When a generated view and canonical source disagree, stop and report the
 integrity failure rather than selecting whichever text is more convenient.
+
+The current deterministic heading index is
+[`generated/automotive_master.index.json`](../generated/automotive_master.index.json).
+Resolve a section there, then read the complete recorded line range from the
+canonical master. A heading match alone is not enough context for a technical
+decision.
 
 ## Repository-wide audit requests
 

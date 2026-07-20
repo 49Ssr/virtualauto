@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/blender-run.schema.json",
+  "title": "VirtualAuto Blender execution manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "id",
+    "status",
+    "captured_at",
+    "blender",
+    "host",
+    "scene",
+    "render",
+    "colour_management",
+    "evidence_state"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^RUN-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "status": {"enum": ["captured", "failed"]},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "blender": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "version_tuple", "build_hash", "build_branch", "build_type"],
+      "properties": {
+        "version": {"type": "string"},
+        "version_tuple": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "integer"}},
+        "build_hash": {"type": "string"},
+        "build_branch": {"type": "string"},
+        "build_type": {"type": "string"}
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "python_version"],
+      "properties": {
+        "platform": {"type": "string"},
+        "python_version": {"type": "string"}
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "source_path", "source_sha256"],
+      "properties": {
+        "name": {"type": "string"},
+        "source_path": {"type": ["string", "null"]},
+        "source_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "resolution_x", "resolution_y", "resolution_percentage", "frame", "samples", "denoising", "device"],
+      "properties": {
+        "engine": {"type": "string"},
+        "resolution_x": {"type": "integer", "minimum": 1},
+        "resolution_y": {"type": "integer", "minimum": 1},
+        "resolution_percentage": {"type": "integer", "minimum": 1, "maximum": 100},
+        "frame": {"type": "integer"},
+        "samples": {"type": ["integer", "null"], "minimum": 1},
+        "denoising": {"type": ["boolean", "null"]},
+        "device": {"type": ["string", "null"]}
+      }
+    },
+    "colour_management": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display_device", "view_transform", "look", "exposure", "gamma"],
+      "properties": {
+        "display_device": {"type": "string"},
+        "view_transform": {"type": "string"},
+        "look": {"type": "string"},
+        "exposure": {"type": "number"},
+        "gamma": {"type": "number"},
+        "ocio_config_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "evidence_state": {"const": "runtime-metadata-only"},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  }
+}
