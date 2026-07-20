@@ -12,3 +12,15 @@ ignored locally and must never be committed.
 
 Prefer immutable source inputs. Start each conversion in an empty output
 directory, and retain generated manifests beside the outputs.
+
+These boundaries are deliberate custody points, not a requirement to copy every
+payload between every stage. DriveClubFS and the package/resource utilities are
+external file-oriented programs, so VirtualAuto cannot truthfully replace their
+interfaces with `BytesIO`. A wrapper may pass an output path directly into the
+next compatible stage, or use an ignored temporary directory, after that path is
+validated and the transformation is recorded. It must not overwrite the prior
+stage's immutable input or silently discard unknown files.
+
+If profiling later identifies material I/O cost, optimise the measured stage.
+Do not remove auditable boundaries merely because an in-memory design sounds
+cleaner in the abstract.

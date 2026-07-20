@@ -13,6 +13,7 @@ from .assets import register_source_asset
 from .blender_runner import run_smoke
 from .doctor import diagnose
 from .driveclub import build_driveclubfs, unpack_filesystem, write_listing_report
+from .evidence import ARTIFACT_TYPES, RIGHTS_STATUSES, record_evidence
 from .paths import repository_root
 
 
@@ -54,6 +55,27 @@ def build_parser() -> argparse.ArgumentParser:
     register.add_argument("--storage-reference", required=True)
     register.add_argument("--notes")
     register.add_argument("--overwrite", action="store_true")
+
+    evidence = subcommands.add_parser(
+        "record-evidence",
+        help="hash a retained artifact and create its evidence record",
+    )
+    evidence.add_argument("artifact")
+    evidence.add_argument("--id", required=True)
+    evidence.add_argument("--experiment-id")
+    evidence.add_argument(
+        "--artifact-type", choices=sorted(ARTIFACT_TYPES), required=True
+    )
+    evidence.add_argument("--provenance", required=True)
+    evidence.add_argument(
+        "--rights-status", choices=sorted(RIGHTS_STATUSES), required=True
+    )
+    evidence.add_argument("--output")
+    evidence.add_argument("--blender-version")
+    evidence.add_argument("--render-engine")
+    evidence.add_argument("--scene-revision")
+    evidence.add_argument("--retention-note")
+    evidence.add_argument("--overwrite", action="store_true")
 
     smoke = subcommands.add_parser(
         "blender-smoke", help="execute the Blender 5.0.1 structural smoke test"
@@ -141,6 +163,28 @@ def main(argv: list[str] | None = None) -> int:
             overwrite=args.overwrite,
             root=root,
         )
+        print(json.dumps(record, indent=2))
+        return 0
+    if args.command == "record-evidence":
+        try:
+            record = record_evidence(
+                artifact=args.artifact,
+                evidence_id=args.id,
+                experiment_id=args.experiment_id,
+                artifact_type=args.artifact_type,
+                provenance=args.provenance,
+                rights_status=args.rights_status,
+                output=args.output,
+                blender_version=args.blender_version,
+                render_engine=args.render_engine,
+                scene_revision=args.scene_revision,
+                retention_note=args.retention_note,
+                overwrite=args.overwrite,
+                root=root,
+            )
+        except (OSError, ValueError) as error:
+            print(f"Evidence recording failed: {error}", file=sys.stderr)
+            return 2
         print(json.dumps(record, indent=2))
         return 0
     if args.command == "blender-smoke":

@@ -151,9 +151,22 @@ def fail(message: str) -> None:
 
 
 def repository_paths(pattern: str) -> Iterator[Path]:
-    """Yield project paths while excluding local tooling environments."""
-    for path in ROOT.rglob(pattern):
-        relative = path.relative_to(ROOT)
+    """Yield tracked and non-ignored project paths, independent of local caches."""
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail("Could not enumerate tracked and non-ignored repository paths")
+    for value in result.stdout.decode("utf-8").split("\0"):
+        if not value:
+            continue
+        relative = Path(value)
+        path = ROOT / relative
+        if not path.exists() or (pattern != "*" and not relative.match(pattern)):
+            continue
         if any(part in VALIDATION_EXCLUDED_DIRECTORIES for part in relative.parts):
             continue
         normalized = relative.as_posix()

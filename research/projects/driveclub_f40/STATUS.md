@@ -58,6 +58,20 @@ No cause is preferred until the existing export is registered and diagnosed.
 - original mesh/material/hierarchy resources have not been catalogued;
 - DriveClub mesh and element-stream semantics remain incomplete.
 
+## Runtime configuration boundary
+
+- Machine-readable F40 project manifest: not implemented
+- Material or asset compiler: not implemented
+- Panel Colour Offset: unknown; no source or calibration record
+- Bumper Gloss Mismatch: unknown; no source or calibration record
+- Geometry attributes written from project overrides: none
+
+This Markdown status is deliberately not an executable parameter source. A
+future manifest may drive a compiler only after each value has units,
+provenance, confidence, ownership, and one of the states `OEM-disclosed`,
+`measured`, `calibrated`, or `artist-default`. Until then, the CLI must leave
+these values unresolved rather than inventing plausible defaults.
+
 ## Next smallest actions
 
 1. Register the existing export as an immutable private source asset with
@@ -90,3 +104,5 @@ from this checkout.
 - Consolidated repository navigation into `research/`, `workflows/`, `lab/`, and
   `dev/`; reran the Blender 5.0.1 synthetic smoke path and corrected custom
   property enumeration against the live Blender API.
+- Defined the non-fabrication boundary for future project overrides and material
+  compilation; no F40 optical parameter was promoted from status prose.
