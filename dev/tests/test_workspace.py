@@ -20,7 +20,7 @@ class WorkspaceTests(unittest.TestCase):
                 repository=repository,
             )
             run = workspace / "runs/dc-f40-001"
-            self.assertEqual(manifest["run_root"], str(run))
+            self.assertTrue(Path(manifest["run_root"]).samefile(run))
             self.assertTrue((run / "workspace.json").is_file())
             for stage in STAGES:
                 self.assertTrue((run / stage / "input").is_dir())
