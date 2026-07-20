@@ -17,8 +17,8 @@ lawful PS4 package or accessible installation
   -> VirtualAuto Blender archaeology stage
 ```
 
-Working directories are under [`workspace/`](workspace/README.md). Their
-contents are ignored by Git; only the contracts are tracked.
+Private run directories are created outside Git using the
+[workspace contract](WORKSPACE.md).
 
 ## Initial setup
 
@@ -34,16 +34,13 @@ not merely a runtime. Set `VIRTUALAUTO_DOTNET` when `dotnet` is not on `PATH`.
 
 ## Filesystem extraction
 
-Place or privately link the directory containing `game.ndx` and its
-`game*.dat` files at:
-
-`workspace/driveclubfs/input/`
-
-Then run:
+Create a unique private run, then place or link the accessible `game.ndx` and
+`game*.dat` files into the generated DriveClubFS input boundary:
 
 ```text
-virtualauto driveclub list
-virtualauto driveclub unpack
+virtualauto workspace init D:\VirtualAutoWorkspace --run-id dc-f40-001
+virtualauto driveclub list --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\files.json
+virtualauto driveclub unpack --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\filesystem
 ```
 
 `list` is a mandatory safety preflight. It rejects absolute paths, traversal,
@@ -51,12 +48,8 @@ invalid Windows names, reserved device names, and case-insensitive collisions.
 `unpack` repeats the preflight, requires an empty destination, retains upstream
 logs, and records checksums for the input index/data files.
 
-The default extracted root is:
-
-`workspace/driveclubfs/output/filesystem/`
-
-You may pass absolute private-storage paths with `--input` and `--output` rather
-than copying a large installation into the repository checkout.
+Inputs and outputs are explicit so a command cannot silently select an old run.
+Large installations remain outside the repository checkout.
 
 ## Deliberately unavailable
 

@@ -48,7 +48,7 @@ REQUIRED_PATHS = (
     "workflows/README.md",
     "workflows/driveclub/README.md",
     "workflows/driveclub/RUNBOOK.md",
-    "workflows/driveclub/workspace/README.md",
+    "workflows/driveclub/WORKSPACE.md",
     "research/README.md",
     "lab/README.md",
     "dev/README.md",
@@ -74,11 +74,16 @@ REQUIRED_PATHS = (
     "research/indexes/automotive_master.index.json",
     "research/indexes/README.md",
     "dev/scripts/build_master_index.py",
+    "src/virtualauto/research.py",
+    "src/virtualauto/workspace.py",
+    "workflows/blender/addon/virtualauto_blender/__init__.py",
+    "workflows/blender/addon/virtualauto_blender/inventory.py",
     "workflows/blender/scripts/capture_runtime_manifest.py",
     "workflows/blender/scripts/create_smoke_scene.py",
     "workflows/blender/scripts/asset_inventory.py",
+    "workflows/blender/scripts/test_addon.py",
+    "workflows/blender/scripts/test_tangent_frame.py",
     "workflows/blender/toolchains/BLD-BLENDER-501-WINDOWS-X64.json",
-    "workflows/blender/assets/README.md",
     "dev/tests/README.md",
     "dev/tests/fixtures/blender/README.md",
     "dev/tests/test_driveclub.py",
@@ -115,8 +120,6 @@ VALIDATION_EXCLUDED_DIRECTORIES = {
     "__pycache__",
     "venv",
 }
-PRIVATE_WORKSPACE_PREFIXES = ("workflows/driveclub/workspace/",)
-PRIVATE_WORKSPACE_TRACKED_NAMES = {".gitignore", "README.md"}
 FORBIDDEN_SUFFIXES = {
     ".pkg",
     ".dat",
@@ -132,7 +135,7 @@ FORBIDDEN_SUFFIXES = {
     ".hdr",
     ".blend1",
 }
-ALLOWED_BLEND_PREFIXES = ("workflows/blender/assets/", "dev/tests/fixtures/blender/")
+ALLOWED_BLEND_PREFIXES = ("dev/tests/fixtures/blender/",)
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
 ID_KIND_BY_PREFIX = {
     "EXP-": "experiment",
@@ -169,11 +172,6 @@ def repository_paths(pattern: str) -> Iterator[Path]:
             continue
         if any(part in VALIDATION_EXCLUDED_DIRECTORIES for part in relative.parts):
             continue
-        normalized = relative.as_posix()
-        if normalized.startswith(PRIVATE_WORKSPACE_PREFIXES) and (
-            path.name not in PRIVATE_WORKSPACE_TRACKED_NAMES
-        ):
-            continue
         yield path
 
 
@@ -201,18 +199,6 @@ def validate_required_structure() -> None:
 
 
 def validate_no_prohibited_artifacts() -> None:
-    tracked = subprocess.run(
-        ["git", "ls-files", "-z", "--", "workflows/driveclub/workspace"],
-        cwd=ROOT,
-        capture_output=True,
-        check=False,
-    )
-    if tracked.returncode != 0:
-        fail("Could not inspect tracked private-workspace paths")
-    for value in tracked.stdout.decode("utf-8").split("\0"):
-        if value and Path(value).name not in PRIVATE_WORKSPACE_TRACKED_NAMES:
-            fail(f"Private workspace payload is tracked: {value}")
-
     for path in repository_paths("*"):
         relative = path.relative_to(ROOT)
         if path.is_symlink():
@@ -325,6 +311,13 @@ def validate_master_index() -> None:
     retrieval_keys = {section.get("retrieval_key") for section in sections}
     if None in retrieval_keys or len(retrieval_keys) != len(sections):
         fail("Master index contains missing or duplicate retrieval keys")
+    canonical_keys = [
+        section["canonical_key"]
+        for section in sections
+        if section.get("canonical_key") is not None
+    ]
+    if len(canonical_keys) != len(set(canonical_keys)):
+        fail("Master index contains duplicate canonical topic keys")
 
     line_count = provenance["line_count"]
     by_id = {section["id"]: section for section in sections}
@@ -466,8 +459,16 @@ def validate_record_references(manifests: list[tuple[Path, dict[str, Any]]]) -> 
                     resolved.relative_to(ROOT.resolve())
                 except ValueError:
                     fail(f"Evidence path escapes repository: {owner}")
-                if not resolved.is_file():
-                    fail(f"Evidence path does not exist: {owner} -> {repository_path}")
+            if not resolved.is_file():
+                fail(f"Evidence path does not exist: {owner} -> {repository_path}")
+            expected_hash = record.get("sha256")
+            expected_size = record.get("byte_size")
+            if expected_hash is not None:
+                actual_hash = hashlib.sha256(resolved.read_bytes()).hexdigest()
+                if actual_hash != expected_hash:
+                    fail(f"Evidence checksum mismatch: {owner} -> {repository_path}")
+            if expected_size is not None and resolved.stat().st_size != expected_size:
+                fail(f"Evidence byte-size mismatch: {owner} -> {repository_path}")
         elif kind == "observation":
             require_reference(owner, record.get("experiment_id"), "experiment")
             require_many(owner, record.get("evidence_ids"), "evidence")

@@ -18,8 +18,9 @@ ROOT = Path(__file__).resolve().parents[2]
 MASTER = ROOT / "research/automotive_materials/Automotive_Body_RnD_Master.md"
 PROVENANCE = ROOT / "research/automotive_materials/master.provenance.json"
 OUTPUT = ROOT / "research/indexes/automotive_master.index.json"
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.1.0"
 HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+CANONICAL_KEY = re.compile(r"^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\s+[—-]\s+")
 MARKDOWN_DECORATION = re.compile(r"[`*_~]")
 
 
@@ -81,6 +82,11 @@ def main() -> int:
             "level": level,
             "title": title,
             "retrieval_key": retrieval_key,
+            "canonical_key": (
+                canonical.group(1)
+                if (canonical := CANONICAL_KEY.match(title))
+                else None
+            ),
             "line_start": line_number,
             "line_end": len(lines),
             "parent_id": stack[-1]["id"] if stack else None,
@@ -96,7 +102,7 @@ def main() -> int:
 
     document = {
         "$schema": "../../lab/schemas/master-index.schema.json",
-        "index_version": "1.0.0",
+        "index_version": "1.1.0",
         "generator_version": GENERATOR_VERSION,
         "canonical_artifact_id": provenance["id"],
         "source_path": provenance["repository_path"],

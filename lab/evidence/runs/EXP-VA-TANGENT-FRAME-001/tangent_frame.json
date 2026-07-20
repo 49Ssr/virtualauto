@@ -1,0 +1,46 @@
+{
+  "test_id": "MATH-VA-TANGENT-FRAME-001",
+  "blender_version": "5.0.1",
+  "tolerance": 1e-07,
+  "cases": {
+    "orthogonal": {
+      "normal_length_error": 0.0,
+      "tangent_length_error": 0.0,
+      "bitangent_length_error": 0.0,
+      "normal_tangent_dot": 0.0,
+      "normal_bitangent_dot": 0.0,
+      "tangent_bitangent_dot": 0.0,
+      "handedness_error": 0.0
+    },
+    "contaminated": {
+      "normal_length_error": 3.445893459463889e-08,
+      "tangent_length_error": 2.607703164514419e-08,
+      "bitangent_length_error": 5.122274160385132e-09,
+      "normal_tangent_dot": 8.381903171539307e-09,
+      "normal_bitangent_dot": 9.313225746154785e-09,
+      "tangent_bitangent_dot": 1.862645149230957e-09,
+      "handedness_error": 6.891787052154541e-08
+    },
+    "parallel_fallback": {
+      "normal_length_error": 0.0,
+      "tangent_length_error": 0.0,
+      "bitangent_length_error": 0.0,
+      "normal_tangent_dot": 0.0,
+      "normal_bitangent_dot": 0.0,
+      "tangent_bitangent_dot": 0.0,
+      "handedness_error": 0.0
+    },
+    "oblique": {
+      "normal_length_error": 5.5879356031240945e-08,
+      "tangent_length_error": 7.450580596923828e-09,
+      "bitangent_length_error": 8.274946261543903e-08,
+      "normal_tangent_dot": 1.4901161193847656e-08,
+      "normal_bitangent_dot": 7.450580596923828e-09,
+      "tangent_bitangent_dot": 1.6763806343078613e-08,
+      "handedness_error": 1.4901161193847656e-08
+    }
+  },
+  "maximum_error": 8.274946261543903e-08,
+  "passed": true,
+  "scope": "mathematical frame invariant only; no claim about shader appearance, mesh tangents, or carbon-fibre validation"
+}

@@ -59,6 +59,12 @@ Resolve a section there, then read the complete recorded line range from the
 canonical master. A heading match alone is not enough context for a technical
 decision.
 
+For routine work, use `virtualauto research find` and `virtualauto research get`.
+The default search excludes untagged historical headings and returns canonical
+topic keys such as `CP12-*`, `ABR-*`, and `ABR5-*`. This is a retrieval filter,
+not deletion: the complete append-only source remains authoritative, and
+`--include-untagged` is available for historical audits.
+
 ## Repository-wide audit requests
 
 A request such as "prove the whole repository has no contradictions" cannot be

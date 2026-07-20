@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/observation.schema.json",
+  "schema_version": "1.1.0",
+  "id": "OBS-VA-TANGENT-FRAME-001",
+  "experiment_id": "EXP-VA-TANGENT-FRAME-001",
+  "recorded_at": "2026-07-20T13:22:59.1863299Z",
+  "observer": "VirtualAuto Blender mathematical harness",
+  "asset_or_sample": "four synthetic normal/tangent pairs",
+  "part_or_region": "panel-relative tangent-frame construction",
+  "raw_observation": "Blender 5.0.1 evaluated four ordinary, contaminated, parallel, and oblique vector pairs; every unit-length, pairwise-dot, and handedness error remained at or below 8.274946261543903e-08.",
+  "measurement": {
+    "case_count": 4,
+    "tolerance": 1e-07,
+    "maximum_error": 8.274946261543903e-08,
+    "passed": true
+  },
+  "candidate_causes": [
+    "Projection removes normal contamination from the supplied tangent.",
+    "The least-aligned-axis fallback avoids a zero vector for parallel inputs.",
+    "Final cross-product reconstruction restores a right-handed orthonormal basis."
+  ],
+  "interpretation": "The proposed vector construction is numerically suitable for a future Blender 5.0.1 node builder, within the tested cases and tolerance.",
+  "discriminating_tests": [
+    "Build the equivalent shader or Geometry Nodes graph and compare exported diagnostic vectors.",
+    "Test real imported tangent attributes, mirrored UV islands, negative transforms, and degenerate mesh regions.",
+    "Render anisotropic response while rotating the panel and tangent field."
+  ],
+  "evidence_ids": [
+    "EVD-VA-TANGENT-FRAME-001"
+  ],
+  "confidence": "high",
+  "confidence_basis": "The numeric result was produced by the pinned Blender 5.0.1 mathutils implementation and retained with exact measurements.",
+  "confounders": [
+    "The harness did not evaluate a shader node graph.",
+    "Synthetic vectors do not cover importer or mesh-tangent defects.",
+    "Visual carbon-fibre behavior was not rendered."
+  ],
+  "status": "reproduced",
+  "decision": "accept-interpretation"
+}

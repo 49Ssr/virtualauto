@@ -52,9 +52,9 @@ optical transport remains in the shader; fixed configuration belongs in
 versioned records. Each workflow documents its input, output, destructive
 boundaries, and evidence requirements.
 
-DriveClub private inputs and extracted outputs live under
-`workflows/driveclub/workspace/`. Only README and ignore contracts from those
-folders are committed.
+DriveClub private inputs and extracted outputs live in a run-scoped workspace
+outside the checkout. The repository contains only the workspace contract and
+the command that creates those folders.
 
 External command-line tools own file-oriented formats and therefore retain
 explicit input/output custody boundaries. VirtualAuto may use temporary storage
@@ -67,6 +67,21 @@ The portable core under `src/virtualauto/` must remain importable without
 Blender. `bpy` is confined to Blender-hosted entrypoints. A future artist-facing
 add-on is an adapter over tested contracts, not a second implementation of the
 pipeline.
+
+The supported human command surface is `virtualauto`, even when it launches an
+internal maintenance script or Blender-hosted entrypoint. `dev/scripts/` owns
+repository-generation and validation internals; `workflows/blender/scripts/`
+owns code that must execute inside Blender. Moving either into the portable
+package would blur runtime ownership without improving the user interface.
+
+## Human and machine state
+
+Human status Markdown owns narrative, priorities, unknowns, and decisions.
+Schema-backed JSON owns executable parameters, measured values, transformations,
+and evidence identity. A status page links those records by stable ID; it must
+not become a second executable parameter store. Generated Markdown may be added
+when a record has a useful human view, but prose is not regenerated merely to
+create the illusion of one format owning every kind of knowledge.
 
 ## External instruments
 

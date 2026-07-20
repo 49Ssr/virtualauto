@@ -80,12 +80,16 @@ def run_smoke(
     output.mkdir(parents=True, exist_ok=True)
     runtime = output / "runtime.json"
     inventory = output / "inventory.json"
+    addon_inventory = output / "addon_inventory.json"
+    tangent_frame = output / "tangent_frame.json"
     log = output / "smoke.txt"
-    for target in (runtime, inventory, log):
+    for target in (runtime, inventory, addon_inventory, tangent_frame, log):
         if target.exists() and not overwrite:
             raise ValueError(
                 f"Smoke evidence already exists: {target.relative_to(root)}"
             )
+    if addon_inventory.exists():
+        addon_inventory.unlink()
 
     temporary_root = Path(tempfile.gettempdir()).resolve()
     temporary_scene = temporary_root / "virtualauto-blender-5.0.1-smoke.blend"
@@ -124,16 +128,37 @@ def run_smoke(
         script_args=inventory_args,
         cwd=root,
     )
+    addon = run_blender_script(
+        blender=blender,
+        scene=temporary_scene,
+        script=root / "workflows/blender/scripts/test_addon.py",
+        script_args=["--output", str(addon_inventory)],
+        cwd=root,
+    )
+    tangent = run_blender_script(
+        blender=blender,
+        script=root / "workflows/blender/scripts/test_tangent_frame.py",
+        script_args=["--output", str(tangent_frame)],
+        cwd=root,
+    )
     log.write_text(
         "\n\n".join(
             (
                 "[create_smoke_scene]\n" + create.stdout.strip(),
                 "[capture_runtime_manifest]\n" + capture.stdout.strip(),
                 "[asset_inventory]\n" + inspect.stdout.strip(),
+                "[test_addon]\n" + addon.stdout.strip(),
+                "[test_tangent_frame]\n" + tangent.stdout.strip(),
             )
         )
         + "\n",
         encoding="utf-8",
         newline="\n",
     )
-    return {"runtime": runtime, "inventory": inventory, "log": log}
+    return {
+        "runtime": runtime,
+        "inventory": inventory,
+        "addon_inventory": addon_inventory,
+        "tangent_frame": tangent_frame,
+        "log": log,
+    }

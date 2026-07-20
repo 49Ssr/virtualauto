@@ -15,6 +15,9 @@ import bpy
 
 BASELINE_VERSION = (5, 0, 1)
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "workflows/blender/addon"))
+from virtualauto_blender.inventory import build_inventory  # noqa: E402
+
 REPORT_ID = re.compile(r"^RPT-[A-Z0-9]+(?:-[A-Z0-9]+)+$")
 
 
@@ -33,10 +36,6 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
-
-
-def vector(values: object) -> list[float]:
-    return [round(float(value), 9) for value in values]
 
 
 def main() -> int:
@@ -60,63 +59,7 @@ def main() -> int:
         raise SystemExit(f"Output exists; pass --overwrite intentionally: {output}")
 
     source = Path(bpy.data.filepath).resolve() if bpy.data.filepath else None
-    objects: list[dict[str, object]] = []
-    for object_ in sorted(bpy.data.objects, key=lambda item: item.name):
-        entry: dict[str, object] = {
-            "name": object_.name,
-            "type": object_.type,
-            "parent": object_.parent.name if object_.parent else None,
-            "collections": sorted(
-                collection.name for collection in object_.users_collection
-            ),
-            "location": vector(object_.location),
-            "rotation_euler": vector(object_.rotation_euler),
-            "scale": vector(object_.scale),
-            "matrix_determinant": round(float(object_.matrix_world.determinant()), 9),
-            "modifiers": [
-                {"name": modifier.name, "type": modifier.type}
-                for modifier in object_.modifiers
-            ],
-            "custom_properties": sorted(set(object_.keys()) - {"_RNA_UI"}),
-        }
-        if object_.type == "MESH":
-            mesh = object_.data
-            entry["mesh"] = {
-                "name": mesh.name,
-                "vertices": len(mesh.vertices),
-                "edges": len(mesh.edges),
-                "polygons": len(mesh.polygons),
-                "loops": len(mesh.loops),
-                "uv_layers": [layer.name for layer in mesh.uv_layers],
-                "color_attributes": [
-                    {
-                        "name": attribute.name,
-                        "data_type": attribute.data_type,
-                        "domain": attribute.domain,
-                    }
-                    for attribute in mesh.color_attributes
-                ],
-                "attributes": [
-                    {
-                        "name": attribute.name,
-                        "data_type": attribute.data_type,
-                        "domain": attribute.domain,
-                        "count": len(attribute.data),
-                    }
-                    for attribute in mesh.attributes
-                    if not attribute.is_internal
-                ],
-                "materials": [
-                    material.name if material else None for material in mesh.materials
-                ],
-                "shape_keys": (
-                    [block.name for block in mesh.shape_keys.key_blocks]
-                    if mesh.shape_keys
-                    else []
-                ),
-            }
-        objects.append(entry)
-
+    inventory = build_inventory(active_only=False)
     report = {
         "$schema": Path(
             os.path.relpath(ROOT / "lab/schemas/mesh-report.schema.json", output.parent)
@@ -124,31 +67,16 @@ def main() -> int:
         "schema_version": "1.0.0",
         "id": args.id,
         "captured_at": datetime.now(UTC).isoformat(),
-        "blender_version": bpy.app.version_string,
+        "blender_version": inventory["blender_version"],
         "source": {
             "basename": source.name if source else None,
             "sha256": sha256(source) if source and source.is_file() else None,
         },
-        "scene": {
-            "name": bpy.context.scene.name,
-            "unit_system": bpy.context.scene.unit_settings.system,
-            "unit_scale_length": bpy.context.scene.unit_settings.scale_length,
-            "object_count": len(objects),
-        },
-        "objects": objects,
-        "materials": sorted(material.name for material in bpy.data.materials),
-        "images": sorted(
-            (
-                {
-                    "name": image.name,
-                    "source": image.source,
-                    "basename": Path(image.filepath).name if image.filepath else None,
-                }
-                for image in bpy.data.images
-            ),
-            key=lambda item: item["name"],
-        ),
-        "scope": "non-mutating structural inventory; no visual-quality claim",
+        "scene": inventory["scene"],
+        "objects": inventory["objects"],
+        "materials": inventory["materials"],
+        "images": inventory["images"],
+        "scope": inventory["scope"],
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
