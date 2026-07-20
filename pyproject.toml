@@ -30,6 +30,7 @@ where = ["src"]
 [tool.ruff]
 target-version = "py312"
 line-length = 88
+extend-exclude = ["external/vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

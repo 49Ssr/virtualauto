@@ -18,8 +18,8 @@
   ],
   "properties": {
     "$schema": {"type": "string"},
-    "index_version": {"const": "1.0.0"},
-    "generator_version": {"const": "1.0.0"},
+    "index_version": {"const": "1.1.0"},
+    "generator_version": {"const": "1.1.0"},
     "canonical_artifact_id": {"type": "string", "pattern": "^ART-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
     "source_path": {"type": "string", "minLength": 1},
     "source_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
@@ -32,12 +32,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "level", "title", "retrieval_key", "line_start", "line_end", "parent_id"],
+        "required": ["id", "level", "title", "retrieval_key", "canonical_key", "line_start", "line_end", "parent_id"],
         "properties": {
           "id": {"type": "string", "pattern": "^SEC-[A-F0-9]{16}$"},
           "level": {"type": "integer", "minimum": 1, "maximum": 6},
           "title": {"type": "string", "minLength": 1},
           "retrieval_key": {"type": "string", "minLength": 1},
+          "canonical_key": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"},
           "line_start": {"type": "integer", "minimum": 1},
           "line_end": {"type": "integer", "minimum": 1},
           "parent_id": {"type": ["string", "null"], "pattern": "^SEC-[A-F0-9]{16}$"}

@@ -38,13 +38,16 @@ virtualauto driveclub build
 The build must report `build/external/DriveClubFS/DriveClubFS.dll`. The command
 verifies the exact submodule commit before compiling.
 
-## 3. Supply the indexed filesystem privately
+## 3. Create a private run and supply the indexed filesystem
 
-Either place the accessible files in:
+Create the utility-specific boundaries outside the repository:
 
-`workflows/driveclub/workspace/driveclubfs/input/`
+```text
+virtualauto workspace init D:\VirtualAutoWorkspace --run-id dc-f40-001
+```
 
-or keep them elsewhere and pass an absolute `--input` path. A modern input is
+Place or link the accessible files into the generated `driveclubfs/input`
+directory, or pass another absolute `--input` path. A modern input is
 expected to resemble:
 
 ```text
@@ -59,16 +62,8 @@ Do not rename or edit the source files. The older embedded-index form uses
 
 ## 4. Preflight before extraction
 
-Default workspace:
-
 ```text
-virtualauto driveclub list
-```
-
-External private storage:
-
-```text
-virtualauto driveclub list --input D:\DriveClubRoot --output D:\DriveClubWork\files.json
+virtualauto driveclub list --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\files.json
 ```
 
 This parses the upstream listing and rejects absolute paths, traversal,
@@ -77,16 +72,8 @@ collisions, and missing indexed data files. It does not extract payloads.
 
 ## 5. Unpack the filesystem
 
-Default workspace:
-
 ```text
-virtualauto driveclub unpack
-```
-
-External private storage:
-
-```text
-virtualauto driveclub unpack --input D:\DriveClubRoot --output D:\DriveClubWork\filesystem
+virtualauto driveclub unpack --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\filesystem
 ```
 
 The destination must be absent or empty and must not overlap the input tree.
@@ -112,5 +99,5 @@ was reproduced under the wrapper's structural checks. It does not establish:
 
 The next operational target is a guarded RPK catalogue/extractor with explicit
 output ownership. Until that exists, keep selected `.rpk` inputs under the
-private `workspace/rpk/input/` boundary and do not invoke the upstream bulk RPK
+private run's `rpk/input/` boundary and do not invoke the upstream bulk RPK
 extractors through VirtualAuto.

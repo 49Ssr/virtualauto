@@ -8,7 +8,7 @@ working scenes stay in access-controlled storage outside this repository.
 
 The default is a deterministic Python builder rather than a committed `.blend`.
 If a repository-owned regression scene becomes necessary, it may live only
-under `workflows/blender/assets/` or `dev/tests/fixtures/blender/` and must:
+under `dev/tests/fixtures/blender/` and must:
 
 - contain no extracted, proprietary, or externally licensed asset;
 - be tracked through Git LFS, never as a raw Git blob;

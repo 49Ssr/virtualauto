@@ -25,13 +25,21 @@ The full ownership rules are documented in the
 - Blender baseline: `5.0.1`
 - First archaeology target: DriveClub Ferrari F40
 - Pinned operational extractor: DriveClubFS
-- Repository state: guarded extraction and structural Blender smoke paths;
-  no claim of completed DriveClub model conversion
+- Repository state: guarded extraction, deterministic research retrieval, a
+  Blender asset-audit panel, and the first accepted coordinate-math invariant;
+  no claim of completed DriveClub model conversion or production material
 
 The exact Automotive Body R&D v5 master is preserved at
 [Automotive_Body_RnD_Master.md](research/automotive_materials/Automotive_Body_RnD_Master.md).
 Its generated [heading index](research/indexes/automotive_master.index.json) is
 only a retrieval aid and never replaces the master.
+
+Retrieve focused, checksum-bound sections without deleting history:
+
+```text
+virtualauto research find weave --prefix ABR-COMP
+virtualauto research get ABR-COMP-010
+```
 
 ## DriveClub quick start
 
@@ -40,10 +48,11 @@ git submodule update --init --recursive
 python -m pip install -e .
 virtualauto doctor
 virtualauto driveclub build
+virtualauto workspace init D:\VirtualAutoWorkspace --run-id dc-f40-001
 virtualauto driveclub --help
 ```
 
-The guarded input/output folders and the exact operating sequence are in the
+The private run workspace contract and exact operating sequence are in the
 [DriveClub runbook](workflows/driveclub/RUNBOOK.md). Package access or extraction
 does not by itself provide a Blender-ready vehicle; mesh, material, and semantic
 recovery remain separate research stages.

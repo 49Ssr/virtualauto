@@ -1,0 +1,47 @@
+{
+  "$schema": "../../schemas/experiment.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EXP-VA-TANGENT-FRAME-001",
+  "title": "Panel-relative tangent-frame mathematical invariant",
+  "domain": "Blender automotive coordinate systems",
+  "status": "accepted",
+  "question": "Does the proposed Gram-Schmidt and fallback construction produce a right-handed orthonormal frame in Blender 5.0.1?",
+  "hypothesis": "Projection, normalization, cross products, and a least-aligned-axis fallback will remain orthonormal within single-precision tolerance.",
+  "source_ids": [],
+  "assumptions": [
+    "The tested mathutils vectors represent the vector operations later reproduced by a node builder.",
+    "Passing this invariant does not validate imported tangents, carbon-fibre appearance, anisotropic response, or a shader node graph."
+  ],
+  "blender_versions": [
+    "5.0.1 a3db93c5b259"
+  ],
+  "render_engines": [
+    "not-applicable"
+  ],
+  "controlled_variables": {
+    "tolerance": 1e-07,
+    "case_count": 4,
+    "numeric_backend": "Blender mathutils Vector"
+  },
+  "procedure": [
+    "Normalize each candidate normal.",
+    "Project the candidate tangent away from the normal.",
+    "Use the least-aligned cardinal axis when the tangent is degenerate.",
+    "Construct and re-orthogonalize tangent and bitangent with cross products.",
+    "Measure unit-length, pairwise-dot, and handedness errors for four cases inside Blender 5.0.1."
+  ],
+  "acceptance_criteria": [
+    "Every measured unit-length, orthogonality, and handedness error is no greater than 1e-07.",
+    "The parallel tangent case selects a valid deterministic fallback."
+  ],
+  "failure_criteria": [
+    "Any case produces a zero, invalid, left-handed, or non-orthogonal frame beyond tolerance.",
+    "The script executes outside Blender 5.0.1."
+  ],
+  "required_evidence_types": [
+    "measurement"
+  ],
+  "result": "Accepted for the mathematical frame construction only. Four cases passed with maximum recorded error 8.274946261543903e-08.",
+  "decision": "accept",
+  "supersedes": []
+}

@@ -9,7 +9,7 @@
     "$schema": {"type": "string"},
     "schema_version": {"const": "1.0.0"},
     "id": {"type": "string", "pattern": "^FIX-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
-    "repository_path": {"type": "string", "pattern": "^(?:workflows/blender/assets|dev/tests/fixtures/blender)/.+\\.blend$"},
+    "repository_path": {"type": "string", "pattern": "^dev/tests/fixtures/blender/.+\\.blend$"},
     "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "byte_size": {"type": "integer", "minimum": 1},
     "rights_status": {"const": "original"},

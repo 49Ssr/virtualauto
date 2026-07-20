@@ -27,8 +27,6 @@
 
 # Narrow exception for original, reviewed Git-LFS regression assets. Validation
 # rejects raw Git blobs and any .blend outside these two directories.
-!workflows/blender/assets/
-!workflows/blender/assets/**/*.blend
 !dev/tests/fixtures/blender/
 !dev/tests/fixtures/blender/**/*.blend
 

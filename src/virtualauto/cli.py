@@ -15,6 +15,8 @@ from .doctor import diagnose
 from .driveclub import build_driveclubfs, unpack_filesystem, write_listing_report
 from .evidence import ARTIFACT_TYPES, RIGHTS_STATUSES, record_evidence
 from .paths import repository_root
+from .research import find_sections, get_section
+from .workspace import initialise_workspace
 
 
 def run_repository_script(root: Path, name: str, strict: bool = False) -> int:
@@ -82,10 +84,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument(
         "--output-directory",
-        default="lab/evidence/runs/EXP-VA-BLENDER-SMOKE-001",
+        default="tmp/blender-smoke",
     )
     smoke.add_argument("--blender")
     smoke.add_argument("--overwrite", action="store_true")
+
+    workspace = subcommands.add_parser(
+        "workspace", help="create a private run workspace outside Git"
+    )
+    workspace_commands = workspace.add_subparsers(
+        dest="workspace_command", required=True
+    )
+    initialise = workspace_commands.add_parser(
+        "init", help="create isolated per-utility input/output boundaries"
+    )
+    initialise.add_argument("directory")
+    initialise.add_argument("--run-id", required=True)
+
+    research = subcommands.add_parser(
+        "research", help="retrieve exact sections from the canonical master"
+    )
+    research_commands = research.add_subparsers(
+        dest="research_command", required=True
+    )
+    get = research_commands.add_parser(
+        "get", help="print one complete section by canonical or index ID"
+    )
+    get.add_argument("identifier")
+    find = research_commands.add_parser(
+        "find", help="find canonical section headings without legacy noise"
+    )
+    find.add_argument("query")
+    find.add_argument("--prefix")
+    find.add_argument("--limit", type=int, default=20)
+    find.add_argument("--include-untagged", action="store_true")
 
     driveclub = subcommands.add_parser(
         "driveclub", help="operate the guarded DriveClub extraction workspace"
@@ -101,22 +133,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     list_files.add_argument(
         "--input",
-        default="workflows/driveclub/workspace/driveclubfs/input",
+        required=True,
     )
     list_files.add_argument(
         "--output",
-        default="workflows/driveclub/workspace/driveclubfs/output/files.json",
+        required=True,
     )
     unpack = driveclub_commands.add_parser(
         "unpack", help="preflight and unpack the indexed filesystem"
     )
     unpack.add_argument(
         "--input",
-        default="workflows/driveclub/workspace/driveclubfs/input",
+        required=True,
     )
     unpack.add_argument(
         "--output",
-        default="workflows/driveclub/workspace/driveclubfs/output/filesystem",
+        required=True,
     )
     unpack.add_argument(
         "--skip-checksum-verification",
@@ -201,6 +233,47 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+    if args.command == "workspace":
+        if args.workspace_command == "init":
+            try:
+                manifest = initialise_workspace(
+                    args.directory,
+                    run_id=args.run_id,
+                    repository=root,
+                )
+            except (OSError, ValueError) as error:
+                print(f"Workspace creation failed: {error}", file=sys.stderr)
+                return 2
+            print(json.dumps(manifest, indent=2))
+            return 0
+        raise AssertionError(f"Unhandled workspace command: {args.workspace_command}")
+    if args.command == "research":
+        try:
+            if args.research_command == "get":
+                result = get_section(args.identifier, root)
+                metadata = {
+                    "source_path": result["source_path"],
+                    "source_sha256": result["source_sha256"],
+                    "section": result["section"],
+                }
+                print(json.dumps(metadata, indent=2))
+                print("\n--- canonical section ---\n")
+                print(result["content"])
+                return 0
+            if args.research_command == "find":
+                results = find_sections(
+                    args.query,
+                    prefix=args.prefix,
+                    include_untagged=args.include_untagged,
+                    limit=args.limit,
+                    root=root,
+                )
+                print(json.dumps(results, indent=2))
+                return 0
+        except (OSError, ValueError) as error:
+            print(f"Research retrieval failed: {error}", file=sys.stderr)
+            return 2
+        raise AssertionError(f"Unhandled research command: {args.research_command}")
     if args.command == "driveclub":
         try:
             if args.driveclub_command == "build":
