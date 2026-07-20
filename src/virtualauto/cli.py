@@ -21,7 +21,7 @@ def run_repository_script(root: Path, name: str, strict: bool = False) -> int:
     if strict:
         environment["VIRTUALAUTO_STRICT_VALIDATION"] = "1"
     return subprocess.run(
-        [sys.executable, str(root / "scripts" / name)],
+        [sys.executable, str(root / "dev/scripts" / name)],
         cwd=root,
         env=environment,
         check=False,
@@ -60,7 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument(
         "--output-directory",
-        default="evidence/runs/EXP-VA-BLENDER-SMOKE-001",
+        default="lab/evidence/runs/EXP-VA-BLENDER-SMOKE-001",
     )
     smoke.add_argument("--blender")
     smoke.add_argument("--overwrite", action="store_true")
@@ -79,22 +79,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     list_files.add_argument(
         "--input",
-        default="pipelines/driveclub/workspace/driveclubfs/input",
+        default="workflows/driveclub/workspace/driveclubfs/input",
     )
     list_files.add_argument(
         "--output",
-        default="pipelines/driveclub/workspace/driveclubfs/output/files.json",
+        default="workflows/driveclub/workspace/driveclubfs/output/files.json",
     )
     unpack = driveclub_commands.add_parser(
         "unpack", help="preflight and unpack the indexed filesystem"
     )
     unpack.add_argument(
         "--input",
-        default="pipelines/driveclub/workspace/driveclubfs/input",
+        default="workflows/driveclub/workspace/driveclubfs/input",
     )
     unpack.add_argument(
         "--output",
-        default="pipelines/driveclub/workspace/driveclubfs/output/filesystem",
+        default="workflows/driveclub/workspace/driveclubfs/output/filesystem",
     )
     unpack.add_argument(
         "--skip-checksum-verification",

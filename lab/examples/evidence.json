@@ -1,0 +1,21 @@
+{
+  "$schema": "../schemas/evidence.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EVD-DC-F40-UV-001",
+  "experiment_id": "EXP-DC-F40-UV-001",
+  "artifact_type": "log",
+  "repository_path": "lab/examples/evidence/example-note.txt",
+  "external_reference": null,
+  "sha256": null,
+  "byte_size": null,
+  "provenance": "Example-only text file created inside VirtualAuto to validate evidence records without including source assets.",
+  "recorded_at": "2026-07-20T00:02:00Z",
+  "blender_version": null,
+  "render_engine": null,
+  "scene_revision": null,
+  "observation_ids": [
+    "OBS-DC-F40-UV-001"
+  ],
+  "rights_status": "original",
+  "retention_note": "Retain as executable schema documentation."
+}

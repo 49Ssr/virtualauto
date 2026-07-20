@@ -1,0 +1,21 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EVD-VA-BLENDER-LOG-001",
+  "experiment_id": "EXP-VA-BLENDER-SMOKE-001",
+  "artifact_type": "log",
+  "repository_path": "lab/evidence/runs/EXP-VA-BLENDER-SMOKE-001/smoke.txt",
+  "external_reference": null,
+  "sha256": "0e65309791d48c6889207a005391c38a30351aa8285f3a7ee6a72c1eda71d0ad",
+  "byte_size": 922,
+  "provenance": "Combined standard output from the three guarded Blender smoke processes.",
+  "recorded_at": "2026-07-20T01:17:09.500000+00:00",
+  "blender_version": "5.0.1 a3db93c5b259",
+  "render_engine": "EEVEE",
+  "scene_revision": "synthetic-structural-smoke-v1",
+  "observation_ids": [
+    "OBS-VA-BLENDER-SMOKE-001"
+  ],
+  "rights_status": "original",
+  "retention_note": "Text log retained to expose command-level execution and failures."
+}

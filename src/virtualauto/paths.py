@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-MARKERS = ("pyproject.toml", "docs/PROJECT_DOCTRINE.md", "schemas")
+MARKERS = ("pyproject.toml", "lab/governance/PROJECT_DOCTRINE.md", "lab/schemas")
 
 
 def is_repository_root(path: Path) -> bool:

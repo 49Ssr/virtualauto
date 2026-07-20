@@ -1,0 +1,38 @@
+{
+  "$schema": "../../schemas/observation.schema.json",
+  "schema_version": "1.1.0",
+  "id": "OBS-VA-BLENDER-SMOKE-001",
+  "experiment_id": "EXP-VA-BLENDER-SMOKE-001",
+  "recorded_at": "2026-07-20T01:17:09.500000+00:00",
+  "observer": "VirtualAuto automated smoke harness",
+  "asset_or_sample": "synthetic-structural-smoke-v1",
+  "part_or_region": "single test mesh",
+  "raw_observation": "Blender 5.0.1 created one mesh object and a fresh process recovered four vertices, one polygon, UVMap, va_smoke_color, va_region_id, one material, one custom property, and one Bevel modifier.",
+  "measurement": {
+    "object_count": 1,
+    "vertex_count": 4,
+    "polygon_count": 1,
+    "uv_layer_count": 1
+  },
+  "candidate_causes": [
+    "The guarded builder and inventory scripts executed against the expected Blender RNA interface."
+  ],
+  "interpretation": "The repository has a functioning minimal Blender 5.0.1 structural evidence path.",
+  "discriminating_tests": [
+    "Repeat on a fresh Windows checkout.",
+    "Run repository-independent CI checks on Windows and Linux."
+  ],
+  "evidence_ids": [
+    "EVD-VA-BLENDER-RUNTIME-001",
+    "EVD-VA-BLENDER-INVENTORY-001",
+    "EVD-VA-BLENDER-LOG-001"
+  ],
+  "confidence": "high",
+  "confidence_basis": "Three successful guarded Blender processes and schema-backed retained outputs.",
+  "confounders": [
+    "The fixture is synthetic and trivial.",
+    "No visual render or proprietary asset was tested."
+  ],
+  "status": "reproduced",
+  "decision": "accept-interpretation"
+}

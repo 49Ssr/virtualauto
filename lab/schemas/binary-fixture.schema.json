@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/lab/schemas/binary-fixture.schema.json",
+  "title": "VirtualAuto repository-owned binary fixture provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "id", "repository_path", "sha256", "byte_size", "rights_status", "blender_version", "generated_by", "regeneration_status"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^FIX-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "repository_path": {"type": "string", "pattern": "^(?:workflows/blender/assets|dev/tests/fixtures/blender)/.+\\.blend$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "byte_size": {"type": "integer", "minimum": 1},
+    "rights_status": {"const": "original"},
+    "blender_version": {"type": "string"},
+    "generated_by": {"type": "string", "minLength": 3},
+    "regeneration_status": {"enum": ["deterministic-builder", "documented-manual", "not-regenerable"]},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  }
+}

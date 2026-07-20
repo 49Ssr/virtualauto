@@ -12,7 +12,7 @@
 ## Validation
 
 - [ ] `virtualauto validate`
-- [ ] `python -m unittest discover -s tests -v`
+- [ ] `python -m unittest discover -s dev/tests -v`
 - [ ] Relevant controlled experiment or diagnostic was run, or the PR explains why not.
 - [ ] Fresh-file and motion/performance checks are recorded where production qualification is claimed.
 

@@ -1,0 +1,34 @@
+{
+  "$schema": "../schemas/observation.schema.json",
+  "schema_version": "1.1.0",
+  "id": "OBS-DC-F40-UV-001",
+  "experiment_id": "EXP-DC-F40-UV-001",
+  "recorded_at": "2026-07-20T00:03:00Z",
+  "observer": "VirtualAuto example author",
+  "asset_or_sample": "AST-DC-F40-EXPORT-001",
+  "part_or_region": "example body panel",
+  "raw_observation": "The example export is described as having several UV streams, but no stream has yet been demonstrated as the material-facing set.",
+  "measurement": null,
+  "candidate_causes": [
+    "The exporter selected the wrong UV stream.",
+    "The original material combines more than one UV stream.",
+    "A missing per-material transform changes the stored UV coordinates."
+  ],
+  "interpretation": null,
+  "discriminating_tests": [
+    "Render an indexed grid through every preserved UV stream.",
+    "Search material metadata for stream selectors or scale and offset values."
+  ],
+  "evidence_ids": [
+    "EVD-DC-F40-UV-001"
+  ],
+  "confidence": "low",
+  "confidence_basis": "The record intentionally contains no executed extraction or render evidence.",
+  "confounders": [
+    "Damaged topology",
+    "Incorrect material assignment",
+    "Unapplied object transform"
+  ],
+  "status": "observed",
+  "decision": "promote-to-experiment"
+}

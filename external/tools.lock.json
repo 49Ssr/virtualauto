@@ -1,5 +1,5 @@
 {
-  "$schema": "../schemas/external-tool.schema.json",
+  "$schema": "../lab/schemas/external-tool.schema.json",
   "schema_version": "1.1.0",
   "verified_at": "2026-07-20",
   "integration_policy": "mixed",

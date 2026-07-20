@@ -90,7 +90,7 @@ def register_source_asset(
         raise ValueError(f"Asset record already exists: {output.relative_to(root)}")
 
     schema = Path(
-        os.path.relpath(root / "schemas/source-asset.schema.json", output.parent)
+        os.path.relpath(root / "lab/schemas/source-asset.schema.json", output.parent)
     )
     record: dict[str, object] = {
         "$schema": schema.as_posix(),

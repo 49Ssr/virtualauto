@@ -1,0 +1,49 @@
+{
+  "$schema": "../schemas/blender-run.schema.json",
+  "schema_version": "1.0.0",
+  "id": "RUN-EXAMPLE-STRUCTURAL-001",
+  "status": "captured",
+  "captured_at": "2026-07-20T00:00:00Z",
+  "blender": {
+    "version": "5.0.1",
+    "version_tuple": [
+      5,
+      0,
+      1
+    ],
+    "build_hash": "example-only",
+    "build_branch": "example-only",
+    "build_type": "example-only"
+  },
+  "host": {
+    "platform": "example-only",
+    "python_version": "example-only"
+  },
+  "scene": {
+    "name": "Example",
+    "source_path": null,
+    "source_sha256": null
+  },
+  "render": {
+    "engine": "BLENDER_EEVEE_NEXT",
+    "resolution_x": 1920,
+    "resolution_y": 1080,
+    "resolution_percentage": 100,
+    "frame": 1,
+    "samples": null,
+    "denoising": null,
+    "device": null
+  },
+  "colour_management": {
+    "display_device": "sRGB",
+    "view_transform": "AgX",
+    "look": "Medium High Contrast",
+    "exposure": 0.0,
+    "gamma": 1.0,
+    "ocio_config_sha256": null
+  },
+  "evidence_state": "runtime-metadata-only",
+  "notes": [
+    "Schema documentation only; this is not an observed Blender execution."
+  ]
+}

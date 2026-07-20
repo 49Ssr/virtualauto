@@ -8,9 +8,9 @@
 
 # The canonical master deliberately uses Markdown hard-break spaces and is
 # checksum-locked, so whitespace checks must not rewrite or reject them.
-knowledge/automotive_materials/Automotive_Body_RnD_Master.md whitespace=-trailing-space
+research/automotive_materials/Automotive_Body_RnD_Master.md whitespace=-trailing-space
 
 # Only original, reviewed regression scenes are eligible for LFS. Proprietary
 # source and extracted assets remain forbidden regardless of transport.
-blender/assets/**/*.blend filter=lfs diff=lfs merge=lfs -text
-tests/fixtures/blender/**/*.blend filter=lfs diff=lfs merge=lfs -text
+workflows/blender/assets/**/*.blend filter=lfs diff=lfs merge=lfs -text
+dev/tests/fixtures/blender/**/*.blend filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/lab/schemas/canonical-artifact.schema.json",
+  "title": "VirtualAuto canonical artifact provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "id",
+    "title",
+    "repository_path",
+    "source_filename",
+    "sha256",
+    "byte_size",
+    "line_count",
+    "content_status",
+    "transfer_method",
+    "verification"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^ART-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "title": {"type": "string", "minLength": 3},
+    "repository_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"},
+    "source_filename": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "byte_size": {"type": "integer", "minimum": 1},
+    "line_count": {"type": "integer", "minimum": 1},
+    "content_status": {"const": "canonical-byte-preserved-import"},
+    "transfer_method": {"const": "byte-for-byte-copy"},
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checksum_recalculated", "utf8_decoded", "sensitive_string_scan"],
+      "properties": {
+        "checksum_recalculated": {"const": true},
+        "utf8_decoded": {"const": true},
+        "sensitive_string_scan": {"enum": ["passed-pattern-scan", "not-performed"]}
+      }
+    },
+    "notes": {"type": "array", "items": {"type": "string", "minLength": 3}}
+  }
+}

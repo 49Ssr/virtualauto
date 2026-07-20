@@ -1,0 +1,29 @@
+{
+  "$schema": "../schemas/unknown-field.schema.json",
+  "schema_version": "1.0.0",
+  "id": "UNK-DC-F40-VERTEX-001",
+  "source_asset_id": "AST-DC-F40-EXPORT-001",
+  "container": "example vertex stream",
+  "locator": {
+    "resource_id": null,
+    "stream_index": 1,
+    "byte_offset": null,
+    "byte_length": 4,
+    "stride": 20
+  },
+  "observed_representation": "Four bytes retained without an assigned semantic.",
+  "raw_evidence_ids": [
+    "EVD-DC-F40-UV-001"
+  ],
+  "hypotheses": [
+    {
+      "statement": "The bytes may encode a packed direction or colour-like attribute.",
+      "confidence": "low",
+      "basis": "Byte width alone is insufficient to establish the semantic.",
+      "discriminating_test": "Correlate decoded candidates against geometry, material regions, and known stream declarations."
+    }
+  ],
+  "preservation_status": "not-yet-preserved",
+  "status": "unknown",
+  "resolved_semantic": null
+}
