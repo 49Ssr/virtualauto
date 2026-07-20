@@ -61,7 +61,7 @@ class DriveClubPathTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "game.ndx"):
                 validate_filesystem_input(root, root)
             (root / "game.dat").write_bytes(b"fixture")
-            self.assertEqual(validate_filesystem_input(root, root), root)
+            self.assertTrue(validate_filesystem_input(root, root).samefile(root))
 
     def test_missing_indexed_data_file_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
