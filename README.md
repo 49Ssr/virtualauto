@@ -69,6 +69,8 @@ model or reverse-engineered interpretation is correct.
 - The authoritative master is append-only in spirit and checksum guarded.
 - Private or copyrighted source assets stay outside Git.
 - Every complex Blender solution must expose diagnostics and failure conditions.
+- Evidence hashing and record metadata are automated; observations and claims
+  remain deliberate human or instrument interpretations.
 
 Start with the [project doctrine](lab/governance/PROJECT_DOCTRINE.md) before
 changing research or implementation records.

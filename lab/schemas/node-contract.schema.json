@@ -7,15 +7,15 @@
   "required": ["schema_version", "id", "name", "blender_version", "tree_type", "status", "purpose", "inputs", "outputs", "ownership", "engine_support", "diagnostics", "limitations"],
   "properties": {
     "$schema": {"type": "string"},
-    "schema_version": {"const": "1.0.0"},
+    "schema_version": {"const": "2.0.0"},
     "id": {"type": "string", "pattern": "^NODE-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
     "name": {"type": "string", "minLength": 3},
     "blender_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
     "tree_type": {"enum": ["ShaderNodeTree", "GeometryNodeTree", "CompositorNodeTree"]},
     "status": {"enum": ["P0-idea", "P1-specified", "P2-buildable", "P3-executed", "P4-observed", "P5-production-qualified", "rejected", "superseded"]},
     "purpose": {"type": "string", "minLength": 10},
-    "inputs": {"type": "array", "items": {"$ref": "#/$defs/socket"}},
-    "outputs": {"type": "array", "items": {"$ref": "#/$defs/socket"}},
+    "inputs": {"type": "array", "items": {"$ref": "#/$defs/input_socket"}},
+    "outputs": {"type": "array", "items": {"$ref": "#/$defs/output_socket"}},
     "ownership": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 3}},
     "engine_support": {
       "type": "object",
@@ -33,7 +33,27 @@
     "experiment_ids": {"type": "array", "items": {"type": "string", "pattern": "^EXP-[A-Z0-9]+(?:-[A-Z0-9]+)+$"}, "uniqueItems": true}
   },
   "$defs": {
-    "socket": {
+    "input_socket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "data_type", "unit_or_space", "description", "procedural_role"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "data_type": {"enum": ["Float", "Vector", "Color", "Shader", "Geometry", "Boolean", "Integer", "String", "Object", "Material", "Image", "Collection"]},
+        "unit_or_space": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 3},
+        "procedural_role": {"enum": ["none", "control", "coordinate", "field"]},
+        "coordinate_contract": {"$ref": "#/$defs/coordinate_contract"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"procedural_role": {"enum": ["control", "coordinate", "field"]}}, "required": ["procedural_role"]},
+          "then": {"required": ["coordinate_contract"]},
+          "else": {"not": {"required": ["coordinate_contract"]}}
+        }
+      ]
+    },
+    "output_socket": {
       "type": "object",
       "additionalProperties": false,
       "required": ["name", "data_type", "unit_or_space", "description"],
@@ -43,6 +63,24 @@
         "unit_or_space": {"type": "string", "minLength": 1},
         "description": {"type": "string", "minLength": 3}
       }
+    },
+    "coordinate_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "semantic", "scale_basis", "transform_owner"],
+      "properties": {
+        "mode": {"enum": ["not-spatial", "inherit", "OBJECT", "WORLD", "GENERATED", "UV", "NAMED_ATTRIBUTE", "TANGENT", "NORMAL", "CAMERA", "SCREEN"]},
+        "semantic": {"type": "string", "minLength": 3},
+        "attribute_name": {"type": ["string", "null"], "minLength": 1},
+        "scale_basis": {"enum": ["not-applicable", "scene-meters", "source-units", "normalized", "texels", "radians", "custom"]},
+        "transform_owner": {"type": "string", "minLength": 3}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"enum": ["UV", "NAMED_ATTRIBUTE", "TANGENT"]}}, "required": ["mode"]},
+          "then": {"required": ["attribute_name"], "properties": {"attribute_name": {"type": "string", "minLength": 1}}}
+        }
+      ]
     }
   }
 }

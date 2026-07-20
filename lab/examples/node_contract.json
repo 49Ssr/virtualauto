@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/node-contract.schema.json",
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "id": "NODE-DC-UV-DIAGNOSTIC-001",
   "name": "DC_UV_DIAGNOSTIC_B50",
   "blender_version": "5.0.1",
@@ -12,13 +12,22 @@
       "name": "UV",
       "data_type": "Vector",
       "unit_or_space": "stored UV space",
-      "description": "One explicitly selected preserved UV attribute."
+      "description": "One explicitly selected preserved UV attribute.",
+      "procedural_role": "coordinate",
+      "coordinate_contract": {
+        "mode": "UV",
+        "semantic": "UV_PAINT_EFFECT diagnostic candidate",
+        "attribute_name": "caller-selected UV layer",
+        "scale_basis": "normalized",
+        "transform_owner": "The caller selects and preserves the source UV layer."
+      }
     },
     {
       "name": "Grid Image",
       "data_type": "Image",
       "unit_or_space": "scene-linear interpretation declared by image role",
-      "description": "Numbered diagnostic texture used only for mapping inspection."
+      "description": "Numbered diagnostic texture used only for mapping inspection.",
+      "procedural_role": "none"
     }
   ],
   "outputs": [

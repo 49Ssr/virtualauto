@@ -56,6 +56,18 @@ DriveClub private inputs and extracted outputs live under
 `workflows/driveclub/workspace/`. Only README and ignore contracts from those
 folders are committed.
 
+External command-line tools own file-oriented formats and therefore retain
+explicit input/output custody boundaries. VirtualAuto may use temporary storage
+internally, but it must not pretend an external process can consume an in-memory
+Python stream when its reviewed interface requires files. Containerization is a
+deployment option only after the tool's platform, runtime, licensing, and data-
+access requirements are established.
+
+The portable core under `src/virtualauto/` must remain importable without
+Blender. `bpy` is confined to Blender-hosted entrypoints. A future artist-facing
+add-on is an adapter over tested contracts, not a second implementation of the
+pipeline.
+
 ## External instruments
 
 `external/tools.lock.json` is the machine-readable registry. Each tool record

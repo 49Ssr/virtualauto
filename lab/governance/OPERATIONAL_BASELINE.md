@@ -1,6 +1,6 @@
 # Operational baseline
 
-VirtualAuto is considered an operational foundation—not a finished automotive
+VirtualAuto is considered an operational foundation, not a finished automotive
 pipeline—when all of the following are true:
 
 - the canonical automotive master and deterministic retrieval index validate;
@@ -25,6 +25,7 @@ virtualauto doctor
 virtualauto build-index
 virtualauto validate
 virtualauto register-source --help
+virtualauto record-evidence --help
 virtualauto blender-smoke --help
 virtualauto driveclub --help
 ```
