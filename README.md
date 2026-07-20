@@ -24,7 +24,7 @@ would prove it wrong.
 
 - Blender: `5.0.1`
 - Forward reference: Blender `5.2 LTS` only when explicitly labelled
-- Repository stage: validated foundation and first executable contracts
+- Repository stage: operational foundation with one bounded Blender smoke run
 - Current first target: DriveClub Ferrari F40 source and export diagnostics
 
 No DriveClub package, extracted resource, model, texture, or proprietary game
@@ -38,6 +38,8 @@ data is committed here.
 - [Rights and asset boundaries](docs/RIGHTS_AND_ASSET_BOUNDARIES.md)
 - [Licensing status](docs/LICENSING_STATUS.md)
 - [Blender reproducibility baseline](docs/BLENDER_REPRODUCIBILITY.md)
+- [Operational baseline and limits](docs/OPERATIONAL_BASELINE.md)
+- [Binary asset policy](docs/BINARY_ASSET_POLICY.md)
 - [Schema lifecycle](docs/SCHEMA_LIFECYCLE.md)
 - [Contribution workflow](CONTRIBUTING.md)
 - [Project status and changelogs](projects/README.md)
@@ -106,16 +108,26 @@ workflow runs correctly in Blender.
 
 DriveClubFS, ShadPKG, PkgToolBox, and 010GameTemplates are recorded at exact
 upstream commits with purpose, limitations, license state, and integration
-status. Submodules are added only through a separate reviewed decision.
+status. The MIT-licensed ShadPKG and 010GameTemplates revisions are pinned as
+submodules; DriveClubFS and PkgToolBox remain records because their reviewed
+license state is not clean enough for integration.
 
 ## Repository validation
 
-```bash
-python -m pip install -r requirements-validation.txt
-python scripts/build_master_index.py
-VIRTUALAUTO_STRICT_VALIDATION=1 python scripts/validate_repository.py
+```text
+git submodule update --init --recursive
+python -m pip install -e .
+virtualauto doctor
+virtualauto build-index
+virtualauto validate
 ```
 
 Validation checks schemas, cross-record references, local links, repository
 structure, evidence locations, tool pins, and prohibited asset leakage. A pass
 proves structural consistency, not physical or reverse-engineering correctness.
+
+The accepted synthetic Blender smoke experiment is
+[`EXP-VA-BLENDER-SMOKE-001`](experiments/completed/EXP-VA-BLENDER-SMOKE-001.json).
+It proves the guarded Blender 5.0.1 structural path on one recorded Windows
+host; it does not prove any DriveClub extraction or automotive look-development
+claim.

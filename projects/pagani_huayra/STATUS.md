@@ -2,11 +2,11 @@
 
 ## State
 
-`paused`
+`discontinued; evidence retained`
 
-The project is not the current VirtualAuto priority. Its unresolved observations
-are retained because they directly motivate reusable geometry, material, AO,
-lighting, and import-forensics work.
+The original project is discontinued. Its unresolved observations are retained
+because they directly motivate reusable geometry, material, AO, lighting, and
+import-forensics work; retaining them does not imply that work will resume.
 
 ## Current baseline
 

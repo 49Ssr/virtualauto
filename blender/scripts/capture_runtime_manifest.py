@@ -13,11 +13,10 @@ import os
 import platform
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import bpy
-
 
 BASELINE_VERSION = (5, 0, 1)
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,10 +61,14 @@ def main() -> int:
     output = output.resolve()
     try:
         output.relative_to(ROOT)
-    except ValueError:
-        raise SystemExit("Output path must remain inside the VirtualAuto repository")
+    except ValueError as error:
+        raise SystemExit(
+            "Output path must remain inside the VirtualAuto repository"
+        ) from error
     if output.exists() and not args.overwrite:
-        raise SystemExit(f"Output already exists; use --overwrite intentionally: {output}")
+        raise SystemExit(
+            f"Output already exists; use --overwrite intentionally: {output}"
+        )
 
     schema_path = ROOT / "schemas/blender-run.schema.json"
     schema_ref = Path(os.path.relpath(schema_path, output.parent)).as_posix()
@@ -79,7 +82,9 @@ def main() -> int:
 
     scene = bpy.context.scene
     blend_path = Path(bpy.data.filepath) if bpy.data.filepath else None
-    source_sha256 = file_sha256(blend_path) if blend_path and blend_path.is_file() else None
+    source_sha256 = (
+        file_sha256(blend_path) if blend_path and blend_path.is_file() else None
+    )
 
     samples = None
     denoising = None
@@ -102,7 +107,7 @@ def main() -> int:
         "schema_version": "1.0.0",
         "id": args.id,
         "status": "captured",
-        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "captured_at": datetime.now(UTC).isoformat(),
         "blender": {
             "version": bpy.app.version_string,
             "version_tuple": list(actual_version),
@@ -139,8 +144,9 @@ def main() -> int:
         },
         "evidence_state": "runtime-metadata-only",
         "notes": [
-            "This manifest records runtime metadata only; it is not render or visual evidence.",
-            "ocio_config_sha256 records only a checksum of an explicit OCIO override."
+            "This manifest records runtime metadata only; it is not render or "
+            "visual evidence.",
+            "ocio_config_sha256 records only a checksum of an explicit OCIO override.",
         ],
     }
 

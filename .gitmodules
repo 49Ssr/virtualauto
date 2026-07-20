@@ -1,0 +1,6 @@
+[submodule "external/vendor/ShadPKG"]
+	path = external/vendor/ShadPKG
+	url = https://github.com/seregonwar/ShadPKG.git
+[submodule "external/vendor/010GameTemplates"]
+	path = external/vendor/010GameTemplates
+	url = https://github.com/Nenkai/010GameTemplates.git

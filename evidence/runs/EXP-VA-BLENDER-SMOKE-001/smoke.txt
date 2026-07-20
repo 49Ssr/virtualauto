@@ -1,0 +1,14 @@
+[create_smoke_scene]
+Blender 5.0.1 (hash a3db93c5b259 built 2026-02-06 01:32:51)
+Info: Saved as "virtualauto-blender-5.0.1-smoke.blend"
+created deterministic smoke scene: C:\tmp\virtualauto-blender-5.0.1-smoke.blend
+
+[capture_runtime_manifest]
+00:00.328  blend            | Read blend: "C:\tmp\virtualauto-blender-5.0.1-smoke.blend"
+Blender 5.0.1 (hash a3db93c5b259 built 2026-02-06 01:32:51)
+wrote Blender runtime manifest: C:\Users\shaya\.codex\.chatgpt-projects\g-p-69868982cab08191a6551ffa1d8a07b7\virtualauto-review\evidence\runs\EXP-VA-BLENDER-SMOKE-001\runtime.json
+
+[asset_inventory]
+00:00.297  blend            | Read blend: "C:\tmp\virtualauto-blender-5.0.1-smoke.blend"
+Blender 5.0.1 (hash a3db93c5b259 built 2026-02-06 01:32:51)
+wrote Blender asset inventory: C:\Users\shaya\.codex\.chatgpt-projects\g-p-69868982cab08191a6551ffa1d8a07b7\virtualauto-review\evidence\runs\EXP-VA-BLENDER-SMOKE-001\inventory.json

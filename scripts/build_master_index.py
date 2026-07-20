@@ -14,7 +14,6 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
 MASTER = ROOT / "knowledge/automotive_materials/Automotive_Body_RnD_Master.md"
 PROVENANCE = ROOT / "knowledge/automotive_materials/master.provenance.json"
@@ -73,7 +72,9 @@ def main() -> int:
         base_key = slugify(title)
         key_occurrence = retrieval_key_counts.get(base_key, 0)
         retrieval_key_counts[base_key] = key_occurrence + 1
-        retrieval_key = base_key if key_occurrence == 0 else f"{base_key}-{key_occurrence}"
+        retrieval_key = (
+            base_key if key_occurrence == 0 else f"{base_key}-{key_occurrence}"
+        )
 
         section = {
             "id": stable_id(path_titles, occurrence),

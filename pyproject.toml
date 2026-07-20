@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "virtualauto"
+version = "0.1.0"
+description = "Evidence-driven automotive Blender and asset-archaeology laboratory"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "attrs==26.1.0",
+  "jsonschema==4.26.0",
+  "jsonschema-specifications==2025.9.1",
+  "PyYAML==6.0.3",
+  "referencing==0.37.0",
+  "rpds-py==2026.6.3",
+  "typing-extensions==4.16.0",
+]
+
+[project.scripts]
+virtualauto = "virtualauto.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

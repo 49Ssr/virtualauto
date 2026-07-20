@@ -1,0 +1,117 @@
+{
+  "$schema": "../../../schemas/mesh-report.schema.json",
+  "schema_version": "1.0.0",
+  "id": "RPT-VA-BLENDER-SMOKE-001",
+  "captured_at": "2026-07-20T01:17:09.361474+00:00",
+  "blender_version": "5.0.1",
+  "source": {
+    "basename": "virtualauto-blender-5.0.1-smoke.blend",
+    "sha256": "3924d0e37746e8576c36b9bfc223e0d1f8401f1a627f2e1e2281ae3f4b059846"
+  },
+  "scene": {
+    "name": "VA_SmokeScene",
+    "unit_system": "METRIC",
+    "unit_scale_length": 1.0,
+    "object_count": 1
+  },
+  "objects": [
+    {
+      "name": "VA_SmokeObject",
+      "type": "MESH",
+      "parent": null,
+      "collections": [
+        "Collection"
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "matrix_determinant": 1.0,
+      "modifiers": [
+        {
+          "name": "VA_SmokeBevel",
+          "type": "BEVEL"
+        }
+      ],
+      "custom_properties": [
+        "virtualauto_fixture"
+      ],
+      "mesh": {
+        "name": "VA_SmokeMesh",
+        "vertices": 4,
+        "edges": 4,
+        "polygons": 1,
+        "loops": 4,
+        "uv_layers": [
+          "UVMap"
+        ],
+        "color_attributes": [
+          {
+            "name": "va_smoke_color",
+            "data_type": "FLOAT_COLOR",
+            "domain": "CORNER"
+          }
+        ],
+        "attributes": [
+          {
+            "name": "position",
+            "data_type": "FLOAT_VECTOR",
+            "domain": "POINT",
+            "count": 4
+          },
+          {
+            "name": "va_region_id",
+            "data_type": "INT",
+            "domain": "FACE",
+            "count": 1
+          },
+          {
+            "name": "sharp_face",
+            "data_type": "BOOLEAN",
+            "domain": "FACE",
+            "count": 1
+          },
+          {
+            "name": "va_smoke_color",
+            "data_type": "FLOAT_COLOR",
+            "domain": "CORNER",
+            "count": 4
+          },
+          {
+            "name": "UVMap",
+            "data_type": "FLOAT2",
+            "domain": "CORNER",
+            "count": 4
+          }
+        ],
+        "materials": [
+          "VA_SmokeMaterial"
+        ],
+        "shape_keys": []
+      }
+    }
+  ],
+  "materials": [
+    "Material",
+    "VA_SmokeMaterial"
+  ],
+  "images": [
+    {
+      "name": "Render Result",
+      "source": "VIEWER",
+      "basename": null
+    }
+  ],
+  "scope": "non-mutating structural inventory; no visual-quality claim"
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EVD-VA-BLENDER-RUNTIME-001",
+  "experiment_id": "EXP-VA-BLENDER-SMOKE-001",
+  "artifact_type": "other",
+  "repository_path": "evidence/runs/EXP-VA-BLENDER-SMOKE-001/runtime.json",
+  "external_reference": null,
+  "sha256": "0951dc4707df49eb7f9c1b3e12e2857ceca1e0dbc822f661e17dfac9a8d2435a",
+  "byte_size": 1321,
+  "provenance": "Captured by capture_runtime_manifest.py in the accepted Blender smoke experiment.",
+  "recorded_at": "2026-07-20T01:17:08.852456+00:00",
+  "blender_version": "5.0.1 a3db93c5b259",
+  "render_engine": "EEVEE",
+  "scene_revision": "synthetic-structural-smoke-v1",
+  "observation_ids": ["OBS-VA-BLENDER-SMOKE-001"],
+  "rights_status": "original",
+  "retention_note": "Runtime metadata only; it is not visual or material evidence."
+}

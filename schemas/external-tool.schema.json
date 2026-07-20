@@ -35,6 +35,7 @@
           "record_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+\\.md$"},
           "license_status": {"enum": ["MIT", "declared-with-anomaly", "unverified", "incompatible", "other"]},
           "integration_status": {"enum": ["not-integrated", "record-only", "submodule", "vendored", "blocked-pending-license-review", "rejected"]},
+          "submodule_path": {"type": ["string", "null"], "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
           "notes": {"type": ["string", "null"]}
         }
       }
