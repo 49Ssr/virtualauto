@@ -43,6 +43,8 @@ data is committed here.
 - [Schema lifecycle](docs/SCHEMA_LIFECYCLE.md)
 - [Contribution workflow](CONTRIBUTING.md)
 - [Project status and changelogs](projects/README.md)
+- [Operational pipelines](pipelines/README.md)
+- [DriveClub operator runbook](pipelines/driveclub/RUNBOOK.md)
 - [Knowledge index](knowledge/README.md)
 - [Blender implementation index](blender/README.md)
 - [Experiment system](experiments/README.md)
@@ -108,9 +110,13 @@ workflow runs correctly in Blender.
 
 DriveClubFS, ShadPKG, PkgToolBox, and 010GameTemplates are recorded at exact
 upstream commits with purpose, limitations, license state, and integration
-status. The MIT-licensed ShadPKG and 010GameTemplates revisions are pinned as
-submodules; DriveClubFS and PkgToolBox remain records because their reviewed
-license state is not clean enough for integration.
+status. DriveClubFS, ShadPKG, and 010GameTemplates are exact-commit submodules.
+DriveClubFS retains an explicit placeholder-authorship license anomaly and is
+used behind VirtualAuto-owned safety guards. ShadPKG is retained for source-level
+study only because its root MIT declaration conflicts with widespread
+GPL-2.0-or-later source headers and its extraction boundary is not yet proven.
+PkgToolBox remains blocked because no license file was found at its reviewed
+revision.
 
 ## Repository validation
 
@@ -120,6 +126,7 @@ python -m pip install -e .
 virtualauto doctor
 virtualauto build-index
 virtualauto validate
+virtualauto driveclub --help
 ```
 
 Validation checks schemas, cross-record references, local links, repository

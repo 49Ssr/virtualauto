@@ -4,3 +4,6 @@
 [submodule "external/vendor/010GameTemplates"]
 	path = external/vendor/010GameTemplates
 	url = https://github.com/Nenkai/010GameTemplates.git
+[submodule "external/vendor/DriveClubFS"]
+	path = external/vendor/DriveClubFS
+	url = https://github.com/Nenkai/DriveClubFS.git

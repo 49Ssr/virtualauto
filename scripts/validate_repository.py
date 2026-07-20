@@ -45,6 +45,10 @@ REQUIRED_PATHS = (
     "docs/SCHEMA_LIFECYCLE.md",
     "docs/BINARY_ASSET_POLICY.md",
     "docs/OPERATIONAL_BASELINE.md",
+    "pipelines/README.md",
+    "pipelines/driveclub/README.md",
+    "pipelines/driveclub/RUNBOOK.md",
+    "pipelines/driveclub/workspace/README.md",
     "knowledge/README.md",
     "external/README.md",
     "external/tools.lock.json",
@@ -67,7 +71,6 @@ REQUIRED_PATHS = (
     "knowledge/automotive_materials/master.provenance.json",
     "generated/automotive_master.index.json",
     "generated/README.md",
-    "requirements-validation.txt",
     "scripts/build_master_index.py",
     "blender/scripts/capture_runtime_manifest.py",
     "blender/scripts/create_smoke_scene.py",
@@ -76,6 +79,7 @@ REQUIRED_PATHS = (
     "blender/assets/README.md",
     "tests/README.md",
     "tests/fixtures/blender/README.md",
+    "tests/test_driveclub.py",
     "pyproject.toml",
     "examples/README.md",
 )
@@ -95,6 +99,8 @@ VALIDATION_EXCLUDED_DIRECTORIES = {
     "__pycache__",
     "venv",
 }
+PRIVATE_WORKSPACE_PREFIXES = ("pipelines/driveclub/workspace/",)
+PRIVATE_WORKSPACE_TRACKED_NAMES = {".gitignore", "README.md"}
 FORBIDDEN_SUFFIXES = {
     ".pkg",
     ".dat",
@@ -134,6 +140,11 @@ def repository_paths(pattern: str) -> Iterator[Path]:
         relative = path.relative_to(ROOT)
         if any(part in VALIDATION_EXCLUDED_DIRECTORIES for part in relative.parts):
             continue
+        normalized = relative.as_posix()
+        if normalized.startswith(PRIVATE_WORKSPACE_PREFIXES) and (
+            path.name not in PRIVATE_WORKSPACE_TRACKED_NAMES
+        ):
+            continue
         yield path
 
 
@@ -156,6 +167,18 @@ def validate_required_structure() -> None:
 
 
 def validate_no_prohibited_artifacts() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z", "--", "pipelines/driveclub/workspace"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if tracked.returncode != 0:
+        fail("Could not inspect tracked private-workspace paths")
+    for value in tracked.stdout.decode("utf-8").split("\0"):
+        if value and Path(value).name not in PRIVATE_WORKSPACE_TRACKED_NAMES:
+            fail(f"Private workspace payload is tracked: {value}")
+
     for path in repository_paths("*"):
         relative = path.relative_to(ROOT)
         if path.is_symlink():

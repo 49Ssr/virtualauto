@@ -12,6 +12,7 @@ from pathlib import Path
 from .assets import register_source_asset
 from .blender_runner import run_smoke
 from .doctor import diagnose
+from .driveclub import build_driveclubfs, unpack_filesystem, write_listing_report
 from .paths import repository_root
 
 
@@ -63,6 +64,43 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument("--blender")
     smoke.add_argument("--overwrite", action="store_true")
+
+    driveclub = subcommands.add_parser(
+        "driveclub", help="operate the guarded DriveClub extraction workspace"
+    )
+    driveclub_commands = driveclub.add_subparsers(
+        dest="driveclub_command", required=True
+    )
+    driveclub_commands.add_parser(
+        "build", help="publish the pinned DriveClubFS submodule"
+    )
+    list_files = driveclub_commands.add_parser(
+        "list", help="preflight and record the indexed filesystem"
+    )
+    list_files.add_argument(
+        "--input",
+        default="pipelines/driveclub/workspace/driveclubfs/input",
+    )
+    list_files.add_argument(
+        "--output",
+        default="pipelines/driveclub/workspace/driveclubfs/output/files.json",
+    )
+    unpack = driveclub_commands.add_parser(
+        "unpack", help="preflight and unpack the indexed filesystem"
+    )
+    unpack.add_argument(
+        "--input",
+        default="pipelines/driveclub/workspace/driveclubfs/input",
+    )
+    unpack.add_argument(
+        "--output",
+        default="pipelines/driveclub/workspace/driveclubfs/output/filesystem",
+    )
+    unpack.add_argument(
+        "--skip-checksum-verification",
+        action="store_true",
+        help="explicitly disable upstream MD5 checks; not recommended",
+    )
     return parser
 
 
@@ -119,6 +157,45 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+    if args.command == "driveclub":
+        try:
+            if args.driveclub_command == "build":
+                artifact = build_driveclubfs(root)
+                print(
+                    json.dumps({"artifact": str(artifact.relative_to(root))}, indent=2)
+                )
+                return 0
+            if args.driveclub_command == "list":
+                report = write_listing_report(
+                    input_directory=args.input,
+                    output=args.output,
+                    root=root,
+                )
+                print(
+                    json.dumps(
+                        {
+                            "entry_count": report["entry_count"],
+                            "output": str(Path(args.output)),
+                        },
+                        indent=2,
+                    )
+                )
+                return 0
+            if args.driveclub_command == "unpack":
+                manifest = unpack_filesystem(
+                    input_directory=args.input,
+                    output_directory=args.output,
+                    skip_checksum_verify=args.skip_checksum_verification,
+                    root=root,
+                )
+                print(json.dumps(manifest, indent=2))
+                return 0
+            raise AssertionError(
+                f"Unhandled DriveClub command: {args.driveclub_command}"
+            )
+        except (OSError, ValueError, RuntimeError) as error:
+            print(f"DriveClub operation failed: {error}", file=sys.stderr)
+            return 2
     raise AssertionError(f"Unhandled command: {args.command}")
 
 

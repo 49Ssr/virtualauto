@@ -11,7 +11,8 @@
 
 ## Validation
 
-- [ ] `VIRTUALAUTO_STRICT_VALIDATION=1 python scripts/validate_repository.py`
+- [ ] `virtualauto validate`
+- [ ] `python -m unittest discover -s tests -v`
 - [ ] Relevant controlled experiment or diagnostic was run, or the PR explains why not.
 - [ ] Fresh-file and motion/performance checks are recorded where production qualification is claimed.
 

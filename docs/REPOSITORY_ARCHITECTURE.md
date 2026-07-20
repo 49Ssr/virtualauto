@@ -14,9 +14,11 @@ its provenance.
 | `evidence/` | Small lawful evidence manifests and retained records | Automatic conclusions |
 | `schemas/` | Machine-readable record contracts | Domain conclusions |
 | `external/` | Pinned records for third-party research instruments | Blind trust in upstream behaviour |
-| `tools/` | VirtualAuto-owned utilities | Vendored proprietary data |
+| `pipelines/` | Operational stages and ignored private-workspace contracts | Committed source or extracted asset payloads |
 | `examples/` | Executable schema documentation using fictionalized records | Evidence that a real extraction or render occurred |
 | `docs/` | Governance, boundaries, and retrieval rules | The automotive R&D master itself |
+| `src/virtualauto/` | Packaged VirtualAuto-owned command and guard code | Third-party tool implementations |
+| `scripts/` | Thin repository maintenance entry points used by the package and CI | General dumping ground for utilities |
 
 ## Authoritative master and retrieval views
 
@@ -66,9 +68,9 @@ records explain purpose, documented inputs and outputs, license state,
 limitations, and intended role. A pinned commit means "this revision was
 reviewed"; it does not mean the tool was successfully executed.
 
-Submodules require a separate pull request. They must be pinned to exact commits
-and justified by reproducibility value, legal compatibility, and maintenance
-cost.
+Submodules must be pinned to exact commits and justified by reproducibility
+value, reviewed licensing state, operational necessity, and maintenance cost.
+An anomaly must remain explicit; a Git pin does not validate tool behaviour.
 
 ## Large and restricted files
 
