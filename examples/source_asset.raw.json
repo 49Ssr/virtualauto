@@ -1,0 +1,18 @@
+{
+  "$schema": "../schemas/source-asset.schema.json",
+  "schema_version": "1.0.0",
+  "id": "AST-DC-F40-EXPORT-001",
+  "title": "Example third-party F40 export",
+  "source_kind": "third-party-export",
+  "format": "FBX",
+  "provenance": "Fictionalized private reference used only to exercise the source-asset schema.",
+  "rights_status": "reference-only",
+  "custody_status": "unavailable",
+  "storage_reference": null,
+  "sha256": null,
+  "byte_size": null,
+  "recorded_at": "2026-07-20T00:00:00Z",
+  "derived_from": [],
+  "immutable": true,
+  "notes": "This is not a committed or available game asset."
+}

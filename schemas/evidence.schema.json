@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/evidence.schema.json",
+  "title": "VirtualAuto evidence record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "experiment_id",
+    "artifact_type",
+    "provenance",
+    "recorded_at",
+    "rights_status"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.1.0"},
+    "id": {"type": "string", "pattern": "^EVD-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "experiment_id": {"type": ["string", "null"], "pattern": "^EXP-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "artifact_type": {"enum": ["image", "video", "exr", "blend", "mesh-report", "node-dump", "log", "measurement", "binary-layout", "other"]},
+    "repository_path": {"type": ["string", "null"], "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\.\.(?:/|$)).+"},
+    "external_reference": {"type": ["string", "null"], "format": "uri"},
+    "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "byte_size": {"type": ["integer", "null"], "minimum": 0},
+    "provenance": {"type": "string", "minLength": 5},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "blender_version": {"type": ["string", "null"]},
+    "render_engine": {"type": ["string", "null"]},
+    "scene_revision": {"type": ["string", "null"]},
+    "observation_ids": {"type": "array", "items": {"type": "string", "pattern": "^OBS-[A-Z0-9]+(?:-[A-Z0-9]+)+$"}, "uniqueItems": true},
+    "rights_status": {"enum": ["original", "licensed", "reference-only", "unknown"]},
+    "retention_note": {"type": ["string", "null"]}
+  },
+  "anyOf": [
+    {
+      "required": ["repository_path"],
+      "properties": {"repository_path": {"type": "string", "minLength": 1}}
+    },
+    {
+      "required": ["external_reference"],
+      "properties": {"external_reference": {"type": "string", "format": "uri"}}
+    }
+  ]
+}

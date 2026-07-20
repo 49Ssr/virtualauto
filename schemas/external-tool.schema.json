@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/external-tool.schema.json",
+  "title": "VirtualAuto external tool lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "verified_at", "integration_policy", "tools"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.1.0"},
+    "verified_at": {"type": "string", "format": "date"},
+    "integration_policy": {"enum": ["record-only", "mixed", "submodules-only"]},
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "repository",
+          "default_branch",
+          "commit",
+          "verified_at",
+          "record_path",
+          "license_status",
+          "integration_status"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^EXT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"},
+          "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+          "default_branch": {"type": "string", "minLength": 1},
+          "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+          "verified_at": {"type": "string", "format": "date"},
+          "record_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\.\.(?:/|$)).+\.md$"},
+          "license_status": {"enum": ["MIT", "declared-with-anomaly", "unverified", "incompatible", "other"]},
+          "integration_status": {"enum": ["not-integrated", "record-only", "submodule", "vendored", "blocked-pending-license-review", "rejected"]},
+          "notes": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

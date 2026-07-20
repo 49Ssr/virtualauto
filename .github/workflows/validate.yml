@@ -1,0 +1,36 @@
+name: Validate repository
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: virtualauto-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Structure, schemas, references, and policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validation dependencies
+        run: python -m pip install --disable-pip-version-check jsonschema PyYAML
+
+      - name: Run repository validator
+        env:
+          VIRTUALAUTO_STRICT_VALIDATION: "1"
+        run: python scripts/validate_repository.py
