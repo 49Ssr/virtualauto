@@ -1,0 +1,11 @@
+* text=auto
+*.md text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# The canonical master deliberately uses Markdown hard-break spaces and is
+# checksum-locked, so whitespace checks must not rewrite or reject them.
+knowledge/automotive_materials/Automotive_Body_RnD_Master.md whitespace=-trailing-space

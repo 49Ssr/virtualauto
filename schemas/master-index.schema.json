@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/schemas/master-index.schema.json",
+  "title": "VirtualAuto canonical master heading index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "index_version",
+    "generator_version",
+    "canonical_artifact_id",
+    "source_path",
+    "source_sha256",
+    "source_byte_size",
+    "source_line_count",
+    "section_count",
+    "sections"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "index_version": {"const": "1.0.0"},
+    "generator_version": {"const": "1.0.0"},
+    "canonical_artifact_id": {"type": "string", "pattern": "^ART-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "source_path": {"type": "string", "minLength": 1},
+    "source_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_byte_size": {"type": "integer", "minimum": 1},
+    "source_line_count": {"type": "integer", "minimum": 1},
+    "section_count": {"type": "integer", "minimum": 1},
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "level", "title", "retrieval_key", "line_start", "line_end", "parent_id"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^SEC-[A-F0-9]{16}$"},
+          "level": {"type": "integer", "minimum": 1, "maximum": 6},
+          "title": {"type": "string", "minLength": 1},
+          "retrieval_key": {"type": "string", "minLength": 1},
+          "line_start": {"type": "integer", "minimum": 1},
+          "line_end": {"type": "integer", "minimum": 1},
+          "parent_id": {"type": ["string", "null"], "pattern": "^SEC-[A-F0-9]{16}$"}
+        }
+      }
+    }
+  }
+}

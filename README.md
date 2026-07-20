@@ -24,7 +24,7 @@ would prove it wrong.
 
 - Blender: `5.0.1`
 - Forward reference: Blender `5.2 LTS` only when explicitly labelled
-- Repository stage: foundation and first archaeology research
+- Repository stage: validated foundation and first executable contracts
 - Current first target: DriveClub Ferrari F40 source and export diagnostics
 
 No DriveClub package, extracted resource, model, texture, or proprietary game
@@ -36,6 +36,9 @@ data is committed here.
 - [Repository architecture](docs/REPOSITORY_ARCHITECTURE.md)
 - [AI retrieval protocol](docs/AI_RETRIEVAL_PROTOCOL.md)
 - [Rights and asset boundaries](docs/RIGHTS_AND_ASSET_BOUNDARIES.md)
+- [Licensing status](docs/LICENSING_STATUS.md)
+- [Blender reproducibility baseline](docs/BLENDER_REPRODUCIBILITY.md)
+- [Schema lifecycle](docs/SCHEMA_LIFECYCLE.md)
 - [Contribution workflow](CONTRIBUTING.md)
 - [Project status and changelogs](projects/README.md)
 - [Knowledge index](knowledge/README.md)
@@ -64,11 +67,12 @@ Blender-ready vehicle converter.
 
 ### Automotive body and materials master
 
-The exact v5 unified master is available in the project artifact workspace but
-has not yet been transferred into Git. Its verified status and controlled import
-gate are recorded in
+The exact v5 unified master is committed byte for byte at
+[Automotive_Body_RnD_Master.md](knowledge/automotive_materials/Automotive_Body_RnD_Master.md).
+Its checksum-enforced provenance and controlled import record are in
 [MASTER_IMPORT_STATUS.md](knowledge/automotive_materials/MASTER_IMPORT_STATUS.md).
-No summarized replacement is presented as the master.
+The deterministic [heading index](generated/automotive_master.index.json)
+supports retrieval without replacing or summarizing the canonical source.
 
 ## Core principles
 
@@ -107,7 +111,8 @@ status. Submodules are added only through a separate reviewed decision.
 ## Repository validation
 
 ```bash
-python -m pip install jsonschema PyYAML
+python -m pip install -r requirements-validation.txt
+python scripts/build_master_index.py
 VIRTUALAUTO_STRICT_VALIDATION=1 python scripts/validate_repository.py
 ```
 

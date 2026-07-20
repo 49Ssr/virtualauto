@@ -1,6 +1,6 @@
 # Authoritative master import status
 
-Status: **verified source available; repository transfer pending**
+Status: **imported byte for byte; canonical checksum enforced**
 
 The exact authoritative source is available in the active project artifact
 workspace as:
@@ -14,31 +14,35 @@ Verified artifact facts:
 - SHA-256: `62f0a3663811b7b7259dcd194798c2345e1475c7bcd2c387bc34630dd05f774d`
 - Blender production baseline declared by the master: `5.0.1`
 
-These facts describe the available source artifact; they do **not** claim that
-it is already committed to VirtualAuto.
-
-## Intended canonical destination
+The imported repository artifact is:
 
 `knowledge/automotive_materials/Automotive_Body_RnD_Master.md`
 
-The unified master remains authoritative. Any smaller retrieval files will be
-generated deterministically from it and must identify the source commit,
-master checksum, section ID, and source line range. Generated views must never
-become competing manually edited masters.
+Its machine-readable provenance record is
+[`master.provenance.json`](master.provenance.json). Repository validation now
+recalculates the checksum, byte size, UTF-8 decoding, and line count.
 
-## Controlled import gate
+## Canonical destination
 
-Before committing the file:
+`knowledge/automotive_materials/Automotive_Body_RnD_Master.md`
 
-1. Recalculate SHA-256 from the exact transfer candidate and compare it with the
-   value above.
-2. Review for copyrighted, proprietary, personal, or extracted-game data.
-3. Confirm Markdown structure and local-link behaviour.
-4. Commit the unified source without rewriting or regenerating its content.
-5. Add a provenance manifest recording the source artifact, transfer date,
-   checksum, byte size, and repository commit.
-6. Generate retrieval views only through a reviewed script and verify that a
-   clean regeneration produces no diff.
+The unified master remains authoritative. The generated heading index is
+produced only by
+[`scripts/build_master_index.py`](../../scripts/build_master_index.py) and
+records the source checksum, byte and line counts, content-derived section IDs,
+source line ranges, and generator version. It copies no source prose and never
+becomes a competing manually edited master.
 
-Until the transfer is complete, no summarized or reconstructed prose may be
-represented as the authoritative master.
+## Completed import checks
+
+1. The supplied source checksum was recalculated before transfer.
+2. The source decoded as UTF-8 and matched the recorded line and byte counts.
+3. A targeted sensitive-string scan found no private keys, service tokens,
+   embedded base64 payloads, local user paths, or email addresses.
+4. The unified source was copied without rewriting or regeneration.
+5. The provenance manifest records the exact artifact identity and boundaries.
+6. The deterministic retrieval index copies no source prose.
+
+These checks do not validate every historical citation, URL, physical claim, or
+Blender hypothesis inside the master. Its internal evidence labels remain
+authoritative for those distinctions.

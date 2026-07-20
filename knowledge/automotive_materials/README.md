@@ -2,7 +2,12 @@
 
 Research on physically and procedurally grounded automotive materials.
 
-The authoritative Automotive Body R&D master was not available as a local file
-when this structure was created. Its controlled-import record is in
-[`MASTER_IMPORT_STATUS.md`](MASTER_IMPORT_STATUS.md). Do not reconstruct that
-artifact from chat summaries.
+The authoritative source is
+[`Automotive_Body_RnD_Master.md`](Automotive_Body_RnD_Master.md). Its exact
+checksum and import boundary are recorded in
+[`MASTER_IMPORT_STATUS.md`](MASTER_IMPORT_STATUS.md) and
+[`master.provenance.json`](master.provenance.json).
+
+Use [`generated/automotive_master.index.json`](../../generated/automotive_master.index.json)
+for deterministic navigation, but return to the canonical source for context.
+The generated index never outranks or replaces the unified master.

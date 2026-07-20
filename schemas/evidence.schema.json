@@ -19,7 +19,7 @@
     "id": {"type": "string", "pattern": "^EVD-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
     "experiment_id": {"type": ["string", "null"], "pattern": "^EXP-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
     "artifact_type": {"enum": ["image", "video", "exr", "blend", "mesh-report", "node-dump", "log", "measurement", "binary-layout", "other"]},
-    "repository_path": {"type": ["string", "null"], "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\.\.(?:/|$)).+"},
+    "repository_path": {"type": ["string", "null"], "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"},
     "external_reference": {"type": ["string", "null"], "format": "uri"},
     "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
     "byte_size": {"type": ["integer", "null"], "minimum": 0},

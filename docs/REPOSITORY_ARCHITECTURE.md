@@ -21,20 +21,18 @@ its provenance.
 ## Authoritative master and retrieval views
 
 The unified automotive master remains the canonical human and research source.
-It will live at:
+It lives at:
 
 `knowledge/automotive_materials/Automotive_Body_RnD_Master.md`
 
-Focused retrieval files may later live under `generated/`, but only when a
-deterministic generator can reproduce them from the canonical master. Every
-generated file must declare:
+Focused retrieval files live under `generated/` only when a deterministic
+generator can reproduce them from the canonical master. Every generated index
+must declare:
 
-- source repository commit;
 - source master SHA-256;
-- stable section ID;
+- content-derived section ID;
 - source line range;
 - generator version;
-- generated-at timestamp or reproducible build identifier.
 
 Generated files are never manually edited. A clean regeneration must produce no
 diff.

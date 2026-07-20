@@ -32,7 +32,7 @@
           "default_branch": {"type": "string", "minLength": 1},
           "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
           "verified_at": {"type": "string", "format": "date"},
-          "record_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\.\.(?:/|$)).+\.md$"},
+          "record_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+\\.md$"},
           "license_status": {"enum": ["MIT", "declared-with-anomaly", "unverified", "incompatible", "other"]},
           "integration_status": {"enum": ["not-integrated", "record-only", "submodule", "vendored", "blocked-pending-license-review", "rejected"]},
           "notes": {"type": ["string", "null"]}
