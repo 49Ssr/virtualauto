@@ -51,9 +51,11 @@ state before adding a submodule or depending on behaviour.
 
 ## Local validation
 
-```bash
-python -m pip install jsonschema PyYAML
-VIRTUALAUTO_STRICT_VALIDATION=1 python scripts/validate_repository.py
+```text
+python -m pip install -e .
+virtualauto build-index
+virtualauto validate
+python -m unittest discover -s tests -v
 ```
 
 A passing validator proves structural consistency only. It does not prove a

@@ -14,8 +14,13 @@
 - Archaeology plan: [F40 target plan](../../knowledge/asset_archaeology/driveclub/F40_TARGET.md)
 - Private-source registration command: implemented and unit-tested
 - Blender structural inventory: executed successfully on a synthetic 5.0.1 fixture
-- ShadPKG and 010GameTemplates: pinned as exact-commit submodules; not yet
-  validated against a lawful DriveClub sample
+- DriveClubFS, ShadPKG, and 010GameTemplates: pinned as exact-commit
+  submodules; not yet validated against a lawful DriveClub sample
+- DriveClubFS build: reproduced from the pinned source with .NET SDK 9.0.316;
+  build warnings were retained as upstream findings, not silently treated as
+  VirtualAuto validation
+- Indexed-filesystem wrapper: path-preflight and output verification are
+  implemented and unit-tested; no real DriveClub filesystem has been supplied
 
 ## Direct user observations
 
@@ -63,8 +68,10 @@ No cause is preferred until the existing export is registered and diagnosed.
 4. When original files are available, catalogue the F40 resource dependency
    graph before writing a model converter.
 
-The operational tooling is ready for step 1. No F40 record has been fabricated:
-the private export and original package/root remain absent from this checkout.
+The operational tooling is ready for step 1 and for a guarded filesystem unpack
+once the original `game.ndx`/`game*.dat` set is available. No F40 record has
+been fabricated: the private export and original package/root remain absent
+from this checkout.
 
 ## Changelog
 
@@ -76,3 +83,7 @@ the private export and original package/root remain absent from this checkout.
   be separated from exporter damage.
 - Added a tested private-source registrar and non-mutating Blender 5.0.1
   inventory path without claiming that either has run on the F40.
+- Pinned DriveClubFS and reproduced its .NET 9 build without claiming a real
+  game-data extraction.
+- Added private per-stage workspaces plus guarded filesystem listing and unpack
+  commands.

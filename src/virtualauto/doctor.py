@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .driveclub import DRIVECLUBFS_COMMIT
 from .paths import repository_root
 
 
@@ -53,9 +54,17 @@ def diagnose(root: Path | None = None) -> dict[str, object]:
     root = root or repository_root()
     git_ok, git_version = command_output(["git", "--version"], root)
     lfs_ok, lfs_version = command_output(["git", "lfs", "version"], root)
-    sdk_ok, sdk_output = command_output(["dotnet", "--list-sdks"], root)
+    dotnet = os.environ.get("VIRTUALAUTO_DOTNET") or shutil.which("dotnet")
+    sdk_ok, sdk_output = (
+        command_output([dotnet, "--list-sdks"], root)
+        if dotnet
+        else (False, "dotnet was not found")
+    )
     sdk_lines = [line for line in sdk_output.splitlines() if line.strip()]
     sdk_ok = sdk_ok and bool(sdk_lines)
+    sdk_9_available = sdk_ok and any(
+        line.split()[0].startswith("9.") for line in sdk_lines
+    )
 
     blender_results: list[dict[str, object]] = []
     for candidate in blender_candidates():
@@ -71,13 +80,23 @@ def diagnose(root: Path | None = None) -> dict[str, object]:
         )
 
     submodule_ok, submodules = command_output(["git", "submodule", "status"], root)
+    driveclub_submodule = root / "external/vendor/DriveClubFS"
+    driveclub_pin_ok, driveclub_pin = command_output(
+        ["git", "-C", str(driveclub_submodule), "rev-parse", "HEAD"], root
+    )
+    driveclub_artifact = root / "build/external/DriveClubFS/DriveClubFS.dll"
     return {
         "virtualauto_root": str(root),
         "host": platform.platform(),
         "python": sys.version.split()[0],
         "git": {"available": git_ok, "version": git_version},
         "git_lfs": {"available": lfs_ok, "version": lfs_version},
-        "dotnet_sdk": {"available": sdk_ok, "versions": sdk_lines},
+        "dotnet_sdk": {
+            "command": str(dotnet) if dotnet else None,
+            "available": sdk_ok,
+            "versions": sdk_lines,
+            "version_9_available": sdk_9_available,
+        },
         "blender": blender_results,
         "baseline_blender_available": any(
             item["baseline_5_0_1"] for item in blender_results
@@ -85,6 +104,13 @@ def diagnose(root: Path | None = None) -> dict[str, object]:
         "submodules": {
             "query_succeeded": submodule_ok,
             "status": [line for line in submodules.splitlines() if line.strip()],
+        },
+        "driveclubfs": {
+            "expected_commit": DRIVECLUBFS_COMMIT,
+            "submodule_available": driveclub_pin_ok,
+            "submodule_commit": driveclub_pin if driveclub_pin_ok else None,
+            "pin_matches": driveclub_pin_ok and driveclub_pin == DRIVECLUBFS_COMMIT,
+            "build_artifact_available": driveclub_artifact.is_file(),
         },
         "canonical_master_available": (
             root / "knowledge/automotive_materials/Automotive_Body_RnD_Master.md"

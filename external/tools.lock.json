@@ -12,9 +12,9 @@
       "verified_at": "2026-07-20",
       "record_path": "external/DriveClubFS.md",
       "license_status": "declared-with-anomaly",
-      "integration_status": "record-only",
-      "submodule_path": null,
-      "notes": "MIT text is present, but the upstream copyright line retains placeholders."
+      "integration_status": "submodule",
+      "submodule_path": "external/vendor/DriveClubFS",
+      "notes": "Pinned because it is the central DriveClub filesystem instrument; the upstream MIT copyright placeholders remain an explicit unresolved anomaly."
     },
     {
       "id": "EXT-PKGTOOLBOX",
@@ -35,10 +35,10 @@
       "commit": "7a02c1e56b40477b26a660884deda1f3ca8d2eab",
       "verified_at": "2026-07-20",
       "record_path": "external/ShadPKG.md",
-      "license_status": "MIT",
+      "license_status": "declared-with-anomaly",
       "integration_status": "submodule",
       "submodule_path": "external/vendor/ShadPKG",
-      "notes": "Pinned instrument; upstream functional and security claims remain unverified by VirtualAuto."
+      "notes": "Pinned for source-level review only. Root MIT declarations conflict with widespread GPL-2.0-or-later SPDX headers; RIF integration contains an explicit TODO and output containment is not yet established."
     },
     {
       "id": "EXT-010GAMETEMPLATES",

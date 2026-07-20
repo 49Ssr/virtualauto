@@ -26,7 +26,14 @@ virtualauto build-index
 virtualauto validate
 virtualauto register-source --help
 virtualauto blender-smoke --help
+virtualauto driveclub --help
 ```
+
+The DriveClub filesystem stage additionally requires the pinned DriveClubFS
+submodule and a .NET 9 SDK. Its guarded wrapper can build, preflight-list, and
+unpack the indexed filesystem. Package access, RPK extraction, geometry decoding,
+and Blender reconstruction remain distinct stages and are not implied by a
+successful filesystem unpack.
 
 The current production baseline is Blender 5.0.1. Later versions may be tested,
 but must not silently replace the baseline in an evidence record.

@@ -10,6 +10,12 @@ community research, game data, supplied models, textures, and extracted assets
 remain governed by their respective rights holders and are not relicensed by
 VirtualAuto.
 
+An upstream root licence is not automatically treated as an unambiguous whole-
+repository licence. The current external-tool register records, in particular,
+DriveClubFS placeholder authorship and conflicting MIT/GPL declarations in the
+pinned ShadPKG source. Those anomalies must be resolved before copying or
+linking affected implementation code into VirtualAuto.
+
 Before publishing reusable VirtualAuto code or accepting outside contributions,
 the repository owner should select an appropriate code/documentation licensing
 policy and decide whether research data requires separate terms.
