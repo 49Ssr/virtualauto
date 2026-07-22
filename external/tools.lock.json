@@ -41,6 +41,18 @@
       "notes": "Pinned for source-level review only. Root MIT declarations conflict with widespread GPL-2.0-or-later SPDX headers; RIF integration contains an explicit TODO and output containment is not yet established."
     },
     {
+      "id": "EXT-LIBORBISPKG",
+      "repository": "OpenOrbis/LibOrbisPkg",
+      "default_branch": "master",
+      "commit": "c1caa3ba25097fe602c0d842a0357bf7037b0838",
+      "verified_at": "2026-07-22",
+      "record_path": "external/LibOrbisPkg.md",
+      "license_status": "other",
+      "integration_status": "submodule",
+      "submodule_path": "external/vendor/LibOrbisPkg",
+      "notes": "Upstream declares GNU LGPL version 3. Pinned as an independent package-table and digest-validation instrument; encrypted PFS access still requires valid key material."
+    },
+    {
       "id": "EXT-010GAMETEMPLATES",
       "repository": "Nenkai/010GameTemplates",
       "default_branch": "main",

@@ -7,3 +7,6 @@
 [submodule "external/vendor/DriveClubFS"]
 	path = external/vendor/DriveClubFS
 	url = https://github.com/Nenkai/DriveClubFS.git
+[submodule "external/vendor/LibOrbisPkg"]
+	path = external/vendor/LibOrbisPkg
+	url = https://github.com/OpenOrbis/LibOrbisPkg.git

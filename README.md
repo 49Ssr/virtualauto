@@ -50,6 +50,7 @@ virtualauto doctor
 virtualauto driveclub build
 virtualauto workspace init D:\VirtualAutoWorkspace --run-id dc-f40-001
 virtualauto pkg inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input
+virtualauto pkg --help
 virtualauto driveclub --help
 ```
 

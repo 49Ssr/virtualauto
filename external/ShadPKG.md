@@ -43,14 +43,24 @@ multi-threaded extraction.
   no complete canonical output-containment proof has been established by this
   audit. VirtualAuto therefore does not wrap or automatically execute ShadPKG.
 - Supported PKG categories and cryptographic claims are upstream claims; they
-  have not yet been reproduced or security-audited by VirtualAuto.
+  are not accepted solely from the README.
+- The pinned CLI was built reproducibly in an ignored local build directory on
+  2026-07-22. `sfo-info` correctly identified the private DriveClub 1.28 update,
+  but `pfs-info` terminated with Windows access violation `0xC0000005` before
+  producing a filesystem entry.
+- Source inspection found a crash path consistent with that result:
+  `GetPFSCOffset` returns unsigned `-1` when decrypted data contains no `PFSC`
+  magic, and `PKG::Scan` uses the value in pointer arithmetic and a `memcpy`
+  without checking it. The RSA helper also ignores `DecodingResult` validity
+  before copying output. This does not prove why PFSC recovery failed, but it
+  does make the observed crash unsafe to interpret as successful decryption.
 - It is not a DriveClub resource decoder, geometry converter, or Blender
   importer.
 - Use only with packages the operator is legally entitled to access.
 
 ## Intended role
 
-Pinned source-level research instrument whose output may eventually feed a
-DriveClub-specific filesystem pipeline after license clarification, output-path
-hardening, and independent validation. Pinning does not authorize execution or
-validate its cryptographic, safety, or compatibility claims.
+Pinned source-level research instrument. It is not the active extraction path
+for this retail update unless its error handling, key-result validation, output
+containment, and license conflict are resolved. Pinning does not validate its
+cryptographic, safety, or compatibility claims.
