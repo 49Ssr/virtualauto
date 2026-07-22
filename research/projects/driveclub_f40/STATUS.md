@@ -2,12 +2,14 @@
 
 ## State
 
-`active research; source acquisition pending`
+`active research; 1.28 update acquired, base installation pending`
 
 ## Current baseline
 
 - Blender production baseline: `5.0.1`
-- Original package or installed root: not currently registered
+- Original package or installed root: a private European `CUSA00003` 1.28
+  update has been structurally validated and byte-exactly assembled; the base
+  package or installed root is not yet available
 - Existing third-party export: reported in private possession; not registered or
   committed
 - Retained evidence: none
@@ -15,10 +17,15 @@
 - Private-source registration command: implemented and unit-tested
 - Blender structural inventory: executed successfully on a synthetic 5.0.1 fixture
 - DriveClubFS, ShadPKG, and 010GameTemplates: pinned as exact-commit
-  submodules; not yet validated against a lawful DriveClub sample
+  submodules; DriveClubFS has not yet been validated against an accessible
+  indexed DriveClub filesystem
 - DriveClubFS build: reproduced from the pinned source with .NET SDK 9.0.316;
   build warnings were retained as upstream findings, not silently treated as
   VirtualAuto validation
+- Split-PKG inspector/assembler: implemented and tested; the real five-part
+  1.28 update passed consecutive-index, single-header, uniform-chunk,
+  declared-size, and immutable-source checks, then produced a checksummed
+  19,191,300,096-byte private package
 - Indexed-filesystem wrapper: path-preflight and output verification are
   implemented and unit-tested; no real DriveClub filesystem has been supplied
 
@@ -50,9 +57,27 @@ Possible causes of the UV symptom include:
 
 No cause is preferred until the existing export is registered and diagnosed.
 
+## Package findings
+
+`OBS-INSTRUMENT`, retained in the private run workspace rather than Git:
+
+- content ID: `EP9000-CUSA00003_00-XXXXXXXDRIVECLUB`;
+- `APP_VER`: `01.28`;
+- `TARGET_APP_VER`: `01.27`;
+- `CATEGORY`: `gp`;
+- combined and header-declared byte size: `19,191,300,096`;
+- combined SHA-256:
+  `1fb9d39c3e596f9fae0ecf53a6bad54ff5775c60e8c9a30ac67a9819c1da10e0`.
+
+These establish local byte custody and update identity. They do not establish
+distribution authenticity, payload decryption, a complete base installation,
+or permission to redistribute the package.
+
 ## Blockers
 
-- lawful package or root installation must be sourced again;
+- matching base package or an installed-and-updated root remains necessary;
+- package payload access has not passed VirtualAuto's containment and
+  reproducibility requirements;
 - exact existing-export provenance and exporter are unknown;
 - no fresh Blender 5.0.1 forensic report exists;
 - original mesh/material/hierarchy resources have not been catalogued;
@@ -83,11 +108,22 @@ these values unresolved rather than inventing plausible defaults.
    graph before writing a model converter.
 
 The operational tooling is ready for step 1 and for a guarded filesystem unpack
-once the original `game.ndx`/`game*.dat` set is available. No F40 record has
-been fabricated: the private export and original package/root remain absent
+once an accessible `game.ndx`/`game*.dat` set is available. No F40 record has
+been fabricated: private packages, exports, and extracted data remain absent
 from this checkout.
 
 ## Changelog
+
+### 2026-07-22
+
+- Validated the five numbered fragments of the European 1.28 update without
+  modifying them.
+- Read the retained package header and `param.sfo`, identifying the package as
+  an update from 1.27 to 1.28 rather than a base installation.
+- Assembled a new private package through the guarded PKG stage and retained
+  fragment/output hashes plus the operation manifest outside Git.
+- Kept package payload extraction blocked pending a reviewed, contained access
+  path and a matching base/root source.
 
 ### 2026-07-20
 

@@ -5,10 +5,17 @@ upstream extraction errors.
 
 ## Package and filesystem
 
-1. Which lawful source state will be used: package, installed root, base plus
-   update, or an existing export only?
-2. What exact DriveClub build and region does it represent?
-3. Which package tool can inspect or extract that source without mutation?
+Current evidence resolves the available package as the European `CUSA00003`
+1.28 update targeting 1.27. VirtualAuto can now validate and assemble its five
+numbered fragments without mutation. It does not yet resolve the matching base,
+payload access, or installed-filesystem merge semantics.
+
+1. Which matching base package or installed root will accompany the acquired
+   European 1.28 update?
+2. Which reviewed package-access path can expose the update payload with output
+   containment and reproducible evidence?
+3. Can the source distribution manifest or equivalent upstream hashes be
+   recovered to verify the locally retained fragment hashes?
 4. How are base and update files combined, and how are duplicate names resolved?
 5. Does the resulting `.ndx/.dat` inventory match DriveClubFS expectations?
 6. Can extraction be repeated from checksummed inputs with identical outputs?

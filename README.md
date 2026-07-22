@@ -49,6 +49,7 @@ python -m pip install -e .
 virtualauto doctor
 virtualauto driveclub build
 virtualauto workspace init D:\VirtualAutoWorkspace --run-id dc-f40-001
+virtualauto pkg inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input
 virtualauto driveclub --help
 ```
 

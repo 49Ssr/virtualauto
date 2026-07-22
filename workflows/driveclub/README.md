@@ -10,8 +10,9 @@ For the exact start-to-finish decision path, use the
 ## Stages
 
 ```text
-lawful PS4 package or accessible installation
-  -> package-access stage (manual; ShadPKG is not VirtualAuto-wrapped)
+lawfully accessible numbered PKG fragments or complete package
+  -> guarded structural inspection and byte-exact assembly
+  -> package payload-access stage (ShadPKG is not VirtualAuto-wrapped)
   -> DriveClubFS indexed-filesystem stage (guarded wrapper)
   -> RPK resource stage (blocked pending output-path hardening)
   -> VirtualAuto Blender archaeology stage
@@ -31,6 +32,20 @@ virtualauto driveclub build
 
 The pinned DriveClubFS project targets .NET 9. `build` requires a .NET 9 SDK,
 not merely a runtime. Set `VIRTUALAUTO_DOTNET` when `dotnet` is not on `PATH`.
+
+## Package-fragment assembly
+
+Numbered package fragments can first be inspected and assembled without
+altering them:
+
+```text
+virtualauto pkg inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input
+virtualauto pkg assemble --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\driveclub.pkg
+```
+
+This establishes container structure and byte continuity only. It does not
+decrypt the payload or replace the need for a base installation when the PKG is
+an update.
 
 ## Filesystem extraction
 
