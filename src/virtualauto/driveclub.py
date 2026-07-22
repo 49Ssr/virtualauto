@@ -6,10 +6,11 @@ import hashlib
 import os
 import re
 import shutil
+import struct
 import subprocess
 import tempfile
 import unicodedata
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path, PurePosixPath
 
 from .assets import atomic_json_write
@@ -29,6 +30,8 @@ WINDOWS_RESERVED = {
     *(f"COM{number}" for number in range(1, 10)),
     *(f"LPT{number}" for number in range(1, 10)),
 }
+WINDOWS_EPOCH = datetime(1601, 1, 1, tzinfo=UTC)
+DAT_INDEX_16BIT_CUTOFF = datetime(2014, 8, 20, tzinfo=UTC)
 
 
 def sha256_file(path: Path) -> str:
@@ -170,6 +173,283 @@ def validate_filesystem_input(
     if (directory / "game.ndx").is_file() and not list(directory.glob("game*.dat")):
         raise ValueError("game.ndx is present but no game*.dat files were found")
     return directory
+
+
+def _read_exact(handle, size: int, label: str) -> bytes:
+    value = handle.read(size)
+    if len(value) != size:
+        raise ValueError(f"Truncated {label}: expected {size} bytes, got {len(value)}")
+    return value
+
+
+def _filetime_datetime(value: int) -> datetime:
+    return WINDOWS_EPOCH + timedelta(microseconds=value // 10)
+
+
+def _inspect_dat_header(path: Path) -> tuple[dict[str, object], list[int]]:
+    with path.open("rb") as handle:
+        magic = _read_exact(handle, 4, f"{path.name} magic")
+        (version,) = struct.unpack("<I", _read_exact(handle, 4, "DAT version"))
+        timestamp, toc_offset = struct.unpack(
+            "<qQ", _read_exact(handle, 16, "DAT timestamp/TOC")
+        )
+        if magic != b"DATF":
+            raise ValueError(f"{path.name} does not start with DATF")
+        if version != 4300:
+            raise ValueError(
+                f"{path.name} uses unsupported split-DAT version {version}"
+            )
+        chunk_count, buffer_size = struct.unpack(
+            "<iI", _read_exact(handle, 8, "DAT chunk header")
+        )
+        if chunk_count < 0 or chunk_count > 10_000_000:
+            raise ValueError(f"{path.name} has implausible chunk count {chunk_count}")
+        if buffer_size == 0:
+            raise ValueError(f"{path.name} declares a zero-byte logical chunk size")
+        chunk_magic = _read_exact(handle, 4, "DAT CHNK marker")
+        if chunk_magic != b"CHNK":
+            raise ValueError(f"{path.name} is missing the CHNK marker")
+        packed = _read_exact(handle, chunk_count * 4, "DAT chunk-size table")
+        chunk_sizes = list(struct.unpack(f"<{chunk_count}I", packed))
+        data_magic = _read_exact(handle, 4, "DAT DATA marker")
+        if data_magic not in {b"DATA", bytes(4)}:
+            raise ValueError(
+                f"{path.name} has unsupported DATA marker {data_magic.hex()}"
+            )
+        data_start = handle.tell()
+
+    packed_payload_bytes = sum(chunk_sizes)
+    byte_size = path.stat().st_size
+    if data_start + packed_payload_bytes > byte_size:
+        raise ValueError(
+            f"{path.name} chunk table declares {packed_payload_bytes} payload bytes "
+            f"but only {byte_size - data_start} are present"
+        )
+    zero_chunks = sum(size == 0 for size in chunk_sizes)
+    report = {
+        "name": path.name,
+        "byte_size": byte_size,
+        "version": version,
+        "timestamp_filetime": timestamp,
+        "toc_offset": toc_offset,
+        "chunk_count": chunk_count,
+        "buffer_size": buffer_size,
+        "chunk_marker": chunk_magic.decode("ascii"),
+        "data_marker": data_magic.decode("ascii", errors="replace"),
+        "data_marker_hex": data_magic.hex(),
+        "data_start": data_start,
+        "packed_payload_bytes": packed_payload_bytes,
+        "packed_stream_end": data_start + packed_payload_bytes,
+        "trailing_bytes": byte_size - (data_start + packed_payload_bytes),
+        "zero_sized_chunk_count": zero_chunks,
+    }
+    return report, chunk_sizes
+
+
+def inspect_indexed_filesystem(
+    input_directory: str | Path, root: Path | None = None
+) -> dict[str, object]:
+    """Inspect a modern DriveClub index/DAT set without decompressing payloads."""
+
+    root = root or repository_root()
+    directory = validate_filesystem_input(input_directory, root)
+    index_path = directory / "game.ndx"
+    if not index_path.is_file():
+        raise ValueError("Indexed-filesystem inspection requires game.ndx")
+
+    with index_path.open("rb") as handle:
+        magic = _read_exact(handle, 4, "index magic")
+        (version,) = struct.unpack("<I", _read_exact(handle, 4, "index version"))
+        timestamp, total_data_size = struct.unpack(
+            "<qQ", _read_exact(handle, 16, "index timestamp/size")
+        )
+        hash_a, hash_b, compression, read_buffer_size = struct.unpack(
+            "<IIiI", _read_exact(handle, 16, "index hashing/compression")
+        )
+        if magic not in {b"DATN", b"DATX"}:
+            raise ValueError(f"Unexpected index magic {magic!r}")
+        if version != 4300:
+            raise ValueError(
+                "Indexed-filesystem inspection currently supports version 4300, "
+                f"got {version}"
+            )
+        if read_buffer_size == 0:
+            raise ValueError("Index declares a zero-byte logical read buffer")
+        unknown_1, unknown_2, data_file_count, unknown_4 = struct.unpack(
+            "<IIiI", _read_exact(handle, 16, "index split-DAT fields")
+        )
+        (entry_count,) = struct.unpack("<i", _read_exact(handle, 4, "entry count"))
+        dictionary_size = _read_exact(handle, 1, "dictionary size")[0]
+        if entry_count < 0 or entry_count > 1_000_000:
+            raise ValueError(f"Implausible index entry count {entry_count}")
+        if dictionary_size > 0x80:
+            raise ValueError(f"Implausible dictionary size {dictionary_size}")
+        handle.seek(dictionary_size * 2, os.SEEK_CUR)
+        (compressed_names_size,) = struct.unpack(
+            "<i", _read_exact(handle, 4, "compressed-name size")
+        )
+        if compressed_names_size < 0:
+            raise ValueError("Compressed-name size cannot be negative")
+        handle.seek(compressed_names_size, os.SEEK_CUR)
+        names_marker = _read_exact(handle, 4, "post-name marker")
+
+        active_entries: list[dict[str, int]] = []
+        use_16_bit_index = _filetime_datetime(timestamp) > DAT_INDEX_16BIT_CUTOFF
+        for _ in range(entry_count):
+            packed_index_offset, size, name_hash = struct.unpack(
+                "<QiI", _read_exact(handle, 16, "index entry")
+            )
+            _read_exact(handle, 16, "index entry MD5")
+            if size < 0:
+                raise ValueError("Index contains a negative file size")
+            if use_16_bit_index:
+                dat_index = packed_index_offset & 0xFFFF
+                file_offset = packed_index_offset >> 16
+            else:
+                dat_index = packed_index_offset & 0xFF
+                file_offset = packed_index_offset >> 8
+            if size > 0:
+                active_entries.append(
+                    {
+                        "dat_index": dat_index,
+                        "offset": file_offset,
+                        "size": size,
+                        "name_hash": name_hash,
+                    }
+                )
+        entries_marker = _read_exact(handle, 4, "post-entry marker")
+
+    dat_paths: dict[int, Path] = {}
+    for path in directory.glob("game*.dat"):
+        match = re.fullmatch(r"game(?P<index>\d{3})\.dat", path.name)
+        if match:
+            dat_paths[int(match.group("index"))] = path
+
+    dat_reports: list[dict[str, object]] = []
+    chunk_tables: dict[int, list[int]] = {}
+    invalid_dat_files: list[dict[str, str]] = []
+    for index, path in sorted(dat_paths.items()):
+        try:
+            report, chunk_sizes = _inspect_dat_header(path)
+        except (OSError, ValueError, struct.error) as error:
+            invalid_dat_files.append({"name": path.name, "error": str(error)})
+            continue
+        report["dat_index"] = index
+        dat_reports.append(report)
+        chunk_tables[index] = chunk_sizes
+
+    referenced_indices = sorted({entry["dat_index"] for entry in active_entries})
+    missing_dat_files = [
+        f"game{index:03}.dat" for index in referenced_indices if index not in dat_paths
+    ]
+    mismatched_dat_buffer_sizes = [
+        str(report["name"])
+        for report in dat_reports
+        if report["buffer_size"] != read_buffer_size
+    ]
+    entries_touching_zero_chunks = 0
+    entries_outside_chunk_tables = 0
+    for entry in active_entries:
+        chunks = chunk_tables.get(entry["dat_index"])
+        if chunks is None:
+            continue
+        first = entry["offset"] // read_buffer_size
+        last = (entry["offset"] + entry["size"] - 1) // read_buffer_size
+        if first >= len(chunks) or last >= len(chunks):
+            entries_outside_chunk_tables += 1
+            continue
+        if any(size == 0 for size in chunks[first : last + 1]):
+            entries_touching_zero_chunks += 1
+
+    zero_data_markers = sum(
+        report["data_marker_hex"] == "00000000" for report in dat_reports
+    )
+    index_markers = {
+        "post_names": names_marker,
+        "post_entries": entries_marker,
+    }
+    nonstandard_index_markers = [
+        name
+        for name, marker in index_markers.items()
+        if marker not in {b"\x78\x56\x34\x12"}
+    ]
+    invalid_index_markers = [
+        name
+        for name, marker in index_markers.items()
+        if marker not in {b"\x78\x56\x34\x12", bytes(4)}
+    ]
+    warnings: list[str] = []
+    if missing_dat_files:
+        warnings.append("one or more DAT files referenced by active entries are absent")
+    if invalid_dat_files:
+        warnings.append("one or more DAT headers could not be parsed")
+    if mismatched_dat_buffer_sizes:
+        warnings.append("one or more DAT logical chunk sizes disagree with the index")
+    if entries_touching_zero_chunks:
+        warnings.append(
+            "active entries cross zero-sized chunks; a base/patch overlay or "
+            "cleaner dump is required"
+        )
+    if entries_outside_chunk_tables:
+        warnings.append("active entries extend beyond their DAT chunk tables")
+    if zero_data_markers or nonstandard_index_markers:
+        warnings.append(
+            "zeroed format sentinels indicate a noncanonical repack or sparse overlay"
+        )
+    if invalid_index_markers:
+        warnings.append("one or more index sentinels contain unsupported values")
+
+    status = "complete_for_index"
+    if (
+        missing_dat_files
+        or invalid_dat_files
+        or mismatched_dat_buffer_sizes
+        or entries_outside_chunk_tables
+        or invalid_index_markers
+    ):
+        status = "invalid_or_incomplete"
+    elif entries_touching_zero_chunks or zero_data_markers:
+        status = "overlay_or_repack_requires_base"
+
+    return {
+        "schema_version": "1.0.0",
+        "captured_at": datetime.now(UTC).isoformat(),
+        "scope": "read-only structural inspection; no payload decompression",
+        "status": status,
+        "index": {
+            "name": index_path.name,
+            "byte_size": index_path.stat().st_size,
+            "magic": magic.decode("ascii"),
+            "version": version,
+            "timestamp": _filetime_datetime(timestamp).isoformat(),
+            "total_data_size": total_data_size,
+            "hash_a": hash_a,
+            "hash_b": hash_b,
+            "compression": compression,
+            "read_buffer_size": read_buffer_size,
+            "declared_data_file_count": data_file_count,
+            "entry_count": entry_count,
+            "active_entry_count": len(active_entries),
+            "dictionary_size": dictionary_size,
+            "compressed_names_size": compressed_names_size,
+            "post_names_marker_hex": names_marker.hex(),
+            "post_entries_marker_hex": entries_marker.hex(),
+            "unknown_fields": [unknown_1, unknown_2, unknown_4],
+        },
+        "present_dat_file_count": len(dat_paths),
+        "parsed_dat_file_count": len(dat_reports),
+        "referenced_dat_indices": referenced_indices,
+        "missing_dat_files": missing_dat_files,
+        "invalid_dat_files": invalid_dat_files,
+        "mismatched_dat_buffer_sizes": mismatched_dat_buffer_sizes,
+        "zero_data_marker_count": zero_data_markers,
+        "active_entries_touching_zero_chunks": entries_touching_zero_chunks,
+        "active_entries_outside_chunk_tables": entries_outside_chunk_tables,
+        "nonstandard_index_markers": nonstandard_index_markers,
+        "invalid_index_markers": invalid_index_markers,
+        "dat_files": dat_reports,
+        "warnings": warnings,
+    }
 
 
 def safe_internal_name(name: str) -> str:

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import struct
 import tempfile
 import unittest
 from pathlib import Path
 
 from virtualauto.driveclub import (
+    inspect_indexed_filesystem,
     parse_listing,
     require_separate_trees,
     safe_internal_name,
@@ -14,7 +16,61 @@ from virtualauto.driveclub import (
 )
 
 
+def write_indexed_fixture(root: Path, *, sparse: bool) -> None:
+    timestamp = 133_000_000_000_000_000
+    marker = 0 if sparse else 0x12345678
+    packed_entry = 0
+    index = b"".join(
+        (
+            b"DATX",
+            struct.pack("<I", 4300),
+            struct.pack("<qQ", timestamp, 65536),
+            struct.pack("<IIiI", 13, 1, 7, 65536),
+            struct.pack("<IIiI", 0, 0, 1, 0),
+            struct.pack("<iB", 1, 0),
+            struct.pack("<iI", 0, marker),
+            struct.pack("<QiI", packed_entry, 32, 0x1234),
+            bytes(16),
+            struct.pack("<I", marker),
+        )
+    )
+    (root / "game.ndx").write_bytes(index)
+    chunk_size = 0 if sparse else 64
+    data_marker = bytes(4) if sparse else b"DATA"
+    data = b"".join(
+        (
+            b"DATF",
+            struct.pack("<I", 4300),
+            struct.pack("<qQ", timestamp, 0),
+            struct.pack("<iI", 1, 65536),
+            b"CHNK",
+            struct.pack("<I", chunk_size),
+            data_marker,
+            bytes(chunk_size),
+        )
+    )
+    (root / "game000.dat").write_bytes(data)
+
+
 class DriveClubPathTests(unittest.TestCase):
+    def test_inspects_complete_indexed_filesystem(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_indexed_fixture(root, sparse=False)
+            report = inspect_indexed_filesystem(root, root)
+            self.assertEqual(report["status"], "complete_for_index")
+            self.assertEqual(report["index"]["active_entry_count"], 1)
+            self.assertEqual(report["active_entries_touching_zero_chunks"], 0)
+
+    def test_identifies_sparse_overlay_that_requires_base(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_indexed_fixture(root, sparse=True)
+            report = inspect_indexed_filesystem(root, root)
+            self.assertEqual(report["status"], "overlay_or_repack_requires_base")
+            self.assertEqual(report["zero_data_marker_count"], 1)
+            self.assertEqual(report["active_entries_touching_zero_chunks"], 1)
+
     def test_parses_safe_listing(self) -> None:
         entries = parse_listing(
             "vehicles/ferrari_f40/body.rpk (4096 bytes, Dat Index: 2, "

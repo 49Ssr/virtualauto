@@ -2,14 +2,15 @@
 
 ## State
 
-`active research; 1.28 update acquired, base installation pending`
+`active research; sparse 1.28 filesystem inspected, matching base required`
 
 ## Current baseline
 
 - Blender production baseline: `5.0.1`
 - Original package or installed root: a private European `CUSA00003` 1.28
-  update has been structurally validated and byte-exactly assembled; the base
-  package or installed root is not yet available
+  update and a separate 1.28-labelled full-size container have been inspected;
+  its extracted indexed filesystem is a sparse patch/repack composition and
+  still requires the matching base contribution
 - Existing third-party export: reported in private possession; not registered or
   committed
 - Retained evidence: none
@@ -17,8 +18,8 @@
 - Private-source registration command: implemented and unit-tested
 - Blender structural inventory: executed successfully on a synthetic 5.0.1 fixture
 - DriveClubFS, ShadPKG, LibOrbisPkg, and 010GameTemplates: pinned as exact-commit
-  submodules; DriveClubFS has not yet been validated against an accessible
-  indexed DriveClub filesystem
+  submodules; a temporary, uncommitted DriveClubFS diagnostic patch read the
+  accessible index far enough to expose the sparse-overlay failure mode
 - DriveClubFS build: reproduced from the pinned source with .NET SDK 9.0.316;
   build warnings were retained as upstream findings, not silently treated as
   VirtualAuto validation
@@ -30,7 +31,47 @@
   unencrypted outer entries with per-file SHA-256 records, while three encrypted
   entries and the PFS payload were explicitly skipped
 - Indexed-filesystem wrapper: path-preflight and output verification are
-  implemented and unit-tested; no real DriveClub filesystem has been supplied
+  implemented and unit-tested; the new read-only structural inspector has run
+  against a real filesystem and classified it without extracting payloads
+
+## Sparse-filesystem findings
+
+`OBS-INSTRUMENT`, retained outside Git; observed 2026-07-22:
+
+- the extracted root contains `game.ndx`, `game.chc`, and 88 split DAT files;
+- the version-4300 `DATX` index declares 8,018 records, of which 1,135 carry a
+  nonzero logical size;
+- all 43 DAT indices referenced by active records are present as files, but 441
+  active records cross one or more zero-sized logical chunks;
+- 39 parsed DAT files use a zeroed `DATA` sentinel, and both expected index
+  sentinels are zeroed;
+- the reusable VirtualAuto inspector therefore classifies the set as
+  `overlay_or_repack_requires_base`, not as a complete extractable filesystem.
+
+File count and apparent byte size were misleading here: the split-DAT tables
+encode missing base contribution inside files that still exist. This result is
+structural evidence of an incomplete base/patch composition, not proof of bad
+decryption and not an authenticity judgment about the package source.
+
+## F40 resource evidence from the sparse overlay
+
+`OBS-INSTRUMENT`, private partial output; no resource payload is committed:
+
+- a valid `Resource PacK file` header associated with the Ferrari F40 was found
+  in the logical stream represented by `game448.dat`;
+- its table names `ferrari_f40.evomeshes`, `ferrari_f40.def`,
+  `ferrari_f40.hkx`, original authoring paths, and body, window, lamp,
+  dashboard, and detail textures;
+- 144 structurally readable resource records were catalogued before the sparse
+  stream became incomplete: 76 vertex buffers, 37 pixel buffers, 26 stream
+  formats, 3 index buffers, 1 material, and 1 unresolved record;
+- many referenced resource ranges extend into absent base chunks, so this is a
+  dependency/format breakthrough rather than a complete model extraction.
+
+The resource table confirms that the original asset is materially richer than
+the third-party FBX export. It does not yet establish individual vertex
+semantics, usable UV streams, shader behaviour, or manufacturer-accurate
+material values.
 
 ## Direct user observations
 
@@ -98,7 +139,9 @@ or permission to redistribute the package.
 
 ## Blockers
 
-- matching base package or an installed-and-updated root remains necessary;
+- matching `CUSA00003` base package or an installed-and-updated root remains
+  necessary; the sparse 1.28 filesystem cannot reconstruct unchanged base
+  chunks by itself;
 - package payload access is blocked by encryption/key availability, not by the
   five-part assembly; the matching base or an accessible installed root remains
   the practical next source;
@@ -128,17 +171,29 @@ these values unresolved rather than inventing plausible defaults.
 2. Run a non-destructive Blender 5.0.1 inventory of objects, mesh counts,
    attributes, UV layers, material slots, hierarchy, and custom normals.
 3. Capture indexed-grid views for every UV layer without editing the mesh.
-4. When original files are available, catalogue the F40 resource dependency
-   graph before writing a model converter.
+4. Compose a private base-plus-1.28 filesystem, rerun `driveclub inspect`, and
+   require `complete_for_index` before listing or unpacking.
+5. Catalogue the complete F40 RPK dependency graph before writing a model
+   converter; preserve every unknown vertex and material field.
 
-The operational tooling is ready for step 1 and for a guarded filesystem unpack
-once an accessible `game.ndx`/`game*.dat` set is available. No F40 record has
-been fabricated: private packages, exports, and extracted data remain absent
-from this checkout.
+The operational tooling is ready for step 1. Filesystem unpack remains blocked
+until a composed base-plus-update set passes the structural inspector. No F40
+record has been fabricated: private packages, exports, partial RPK data, and
+extracted assets remain absent from this checkout.
 
 ## Changelog
 
 ### 2026-07-22
+
+- Inspected the new 1.28-labelled package and its accessible filesystem without
+  committing private data.
+- Identified sparse split-DAT chunks and classified the set as a patch/repack
+  overlay requiring matching base content.
+- Recovered a genuine partial F40 RPK table and a 144-record resource catalogue;
+  stopped short of claiming model extraction because payload ranges cross
+  absent base chunks.
+- Added a pure-Python, read-only filesystem classifier so this condition is
+  detected before DriveClubFS listing or extraction.
 
 - Validated the five numbered fragments of the European 1.28 update without
   modifying them.
