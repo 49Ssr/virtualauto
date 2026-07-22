@@ -74,6 +74,7 @@ REQUIRED_PATHS = (
     "research/indexes/automotive_master.index.json",
     "research/indexes/README.md",
     "dev/scripts/build_master_index.py",
+    "src/virtualauto/pkg.py",
     "src/virtualauto/research.py",
     "src/virtualauto/workspace.py",
     "workflows/blender/addon/virtualauto_blender/__init__.py",
@@ -87,6 +88,7 @@ REQUIRED_PATHS = (
     "dev/tests/README.md",
     "dev/tests/fixtures/blender/README.md",
     "dev/tests/test_driveclub.py",
+    "dev/tests/test_pkg.py",
     "pyproject.toml",
     "lab/examples/README.md",
 )

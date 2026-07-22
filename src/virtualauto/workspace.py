@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$")
-STAGES = ("pkgtoolbox", "shadpkg", "driveclubfs", "rpk", "blender")
+STAGES = ("pkg", "pkgtoolbox", "shadpkg", "driveclubfs", "rpk", "blender")
 
 
 def initialise_workspace(

@@ -12,6 +12,7 @@ The command creates:
 ```text
 runs/dc-f40-001/
   workspace.json
+  pkg/input/         pkg/output/
   pkgtoolbox/input/  pkgtoolbox/output/
   shadpkg/input/     shadpkg/output/
   driveclubfs/input/ driveclubfs/output/
