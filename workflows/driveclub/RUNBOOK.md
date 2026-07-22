@@ -107,17 +107,46 @@ game001.dat
 Do not rename or edit the source files. The older embedded-index form uses
 `game.dat`.
 
-## 6. Preflight before extraction
+## 6. Classify the indexed filesystem
+
+Inspect the index and every split-DAT chunk table before asking DriveClubFS to
+decompress anything:
+
+```text
+virtualauto driveclub inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\filesystem-inspection.json
+```
+
+The inspection is read-only. It verifies version-4300 index/DAT structure,
+enumerates active index records, checks their referenced DAT files and logical
+chunk ranges, and reports zero-sized chunks or zeroed format sentinels. Its
+status is one of:
+
+| Status | Meaning |
+| --- | --- |
+| `complete_for_index` | Every active record is backed by a present, structurally readable chunk range. This is permission to try listing, not proof that payload decompression will succeed. |
+| `overlay_or_repack_requires_base` | Active records cross deliberately absent chunks, or split-DAT sentinels are zeroed. Supply the matching base installation and overlay the patch before continuing. |
+| `invalid_or_incomplete` | Referenced DATs are absent, DAT headers are unreadable, or active records exceed their chunk tables. Reacquire or reconstruct the source set before continuing. |
+
+DriveClub 1.28 is a patch layer. A sparse/repacked 1.28 root may retain patch
+chunks while representing unchanged base chunks with zero-length table entries.
+File presence alone therefore does not establish a complete filesystem. Keep
+the base and update from the same title/region, compose them in a separate
+private working tree, and preserve both immutable inputs plus the composition
+manifest. VirtualAuto does not acquire packages, keys, or licenses.
+
+## 7. Preflight names before extraction
 
 ```text
 virtualauto driveclub list --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\files.json
 ```
 
-This parses the upstream listing and rejects absolute paths, traversal,
+Run this only after `driveclub inspect` returns `complete_for_index`. It asks the
+pinned upstream tool to decode the logical filename catalogue, then rejects
+absolute paths, traversal,
 ambiguous separators, invalid Windows names, reserved names, case-insensitive
 collisions, and missing indexed data files. It does not extract payloads.
 
-## 7. Unpack the filesystem
+## 8. Unpack the filesystem
 
 ```text
 virtualauto driveclub unpack --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\filesystem
@@ -133,7 +162,7 @@ requires it. Older formats may not contain checksums, and upstream can disable
 that check internally; the manifest records the request rather than claiming a
 verification the tool did not perform.
 
-## 8. What the result is—and is not
+## 9. What the result is—and is not
 
 A successful filesystem unpack establishes only that the indexed payload tree
 was reproduced under the wrapper's structural checks. It does not establish:
@@ -148,3 +177,16 @@ The next operational target is a guarded RPK catalogue/extractor with explicit
 output ownership. Until that exists, keep selected `.rpk` inputs under the
 private run's `rpk/input/` boundary and do not invoke the upstream bulk RPK
 extractors through VirtualAuto.
+
+## Public corroboration and research leads
+
+- The public [DriveClub/shadPS4 field
+  report](https://akitaonrails.com/en/2026/04/19/my-favorite-retro-racing-games-on-distrobox/#trap-2-v128-is-a-patch-not-a-base-installer)
+  independently describes 1.28 as an overlay, the need for base DAT content,
+  and an 8,018-file result after composition. Treat it as reproducibility
+  evidence, not a format specification.
+- The [ResHax DriveClub research
+  thread](https://reshax.com/topic/719-driveclub-ps4/page/2/) records community
+  observations about paired vertex streams, index buffers, mesh/material
+  references, hierarchy matrices, and unresolved normal encoding. Treat each
+  post as a research lead until reproduced against retained local evidence.

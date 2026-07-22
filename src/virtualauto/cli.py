@@ -12,7 +12,12 @@ from pathlib import Path
 from .assets import register_source_asset
 from .blender_runner import run_smoke
 from .doctor import diagnose
-from .driveclub import build_driveclubfs, unpack_filesystem, write_listing_report
+from .driveclub import (
+    build_driveclubfs,
+    inspect_indexed_filesystem,
+    unpack_filesystem,
+    write_listing_report,
+)
 from .evidence import ARTIFACT_TYPES, RIGHTS_STATUSES, record_evidence
 from .paths import repository_root
 from .pkg import (
@@ -140,9 +145,7 @@ def build_parser() -> argparse.ArgumentParser:
     research = subcommands.add_parser(
         "research", help="retrieve exact sections from the canonical master"
     )
-    research_commands = research.add_subparsers(
-        dest="research_command", required=True
-    )
+    research_commands = research.add_subparsers(dest="research_command", required=True)
     get = research_commands.add_parser(
         "get", help="print one complete section by canonical or index ID"
     )
@@ -164,6 +167,11 @@ def build_parser() -> argparse.ArgumentParser:
     driveclub_commands.add_parser(
         "build", help="publish the pinned DriveClubFS submodule"
     )
+    inspect_filesystem = driveclub_commands.add_parser(
+        "inspect", help="classify an indexed filesystem before decompression"
+    )
+    inspect_filesystem.add_argument("--input", required=True)
+    inspect_filesystem.add_argument("--output")
     list_files = driveclub_commands.add_parser(
         "list", help="preflight and record the indexed filesystem"
     )
@@ -354,6 +362,35 @@ def main(argv: list[str] | None = None) -> int:
                     json.dumps({"artifact": str(artifact.relative_to(root))}, indent=2)
                 )
                 return 0
+            if args.driveclub_command == "inspect":
+                report = inspect_indexed_filesystem(args.input, root)
+                if args.output:
+                    destination = Path(args.output).expanduser().resolve()
+                    if destination.exists():
+                        raise ValueError(
+                            f"Refusing to overwrite existing report: {destination}"
+                        )
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    destination.write_text(
+                        json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+                    summary = {
+                        "status": report["status"],
+                        "report": str(destination),
+                        "active_entry_count": report["index"]["active_entry_count"],
+                        "present_dat_file_count": report["present_dat_file_count"],
+                        "zero_data_marker_count": report["zero_data_marker_count"],
+                        "active_entries_touching_zero_chunks": report[
+                            "active_entries_touching_zero_chunks"
+                        ],
+                        "warnings": report["warnings"],
+                    }
+                    print(json.dumps(summary, indent=2, ensure_ascii=False))
+                else:
+                    print(json.dumps(report, indent=2, ensure_ascii=False))
+                return 0 if report["status"] == "complete_for_index" else 3
             if args.driveclub_command == "list":
                 report = write_listing_report(
                     input_directory=args.input,
