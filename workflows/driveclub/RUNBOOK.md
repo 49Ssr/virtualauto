@@ -14,11 +14,12 @@ access. Never commit game data, keys, credentials, or extracted assets.
 | One complete `.pkg` | Package metadata/access stage; payload access remains unvalidated |
 | Third-party FBX/OBJ export only | Register it as a private source and run Blender inventory; it cannot prove original semantics |
 
-ShadPKG is pinned for source-level study, but VirtualAuto does not execute it.
-Its license declarations conflict, its RIF branch contains an explicit TODO,
-and this audit has not established canonical containment for all extracted
-paths. PkgToolBox remains record-only because no upstream license was found at
-the verified pin.
+ShadPKG is pinned for source-level study, but VirtualAuto does not use it as the
+active retail-package extractor. On the real 1.28 update, `sfo-info` succeeded
+and `pfs-info` crashed before enumerating the encrypted PFS. Source review found
+unchecked cryptographic and PFSC-offset failure paths consistent with that
+crash. LibOrbisPkg is pinned as the independent comparison parser. PkgToolBox
+remains record-only because no upstream license was found at the verified pin.
 
 ## 2. Initialize the instruments
 
@@ -65,7 +66,26 @@ size, and refuses all overwrites. It leaves the source fragments untouched.
 The adjacent manifest is local provenance; cryptographic source verification
 still requires hashes from the original distribution manifest.
 
-## 4. Create a private run and supply the indexed filesystem
+## 4. Inspect and retain the accessible outer package layer
+
+List the complete outer entry table without decrypting the payload:
+
+```text
+virtualauto pkg entries --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\driveclub.pkg
+```
+
+Copy only entries whose table flags identify them as unencrypted:
+
+```text
+virtualauto pkg extract-outer --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\driveclub.pkg --output D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\outer_entries
+```
+
+The output directory must not exist. The command bounds-checks every entry,
+prevents path escape, hashes each copied file, skips encrypted entries, and
+writes `outer_entries.manifest.json`. It does not guess a passcode, accept a
+key, or claim access to the PFS payload.
+
+## 5. Create a private run and supply the indexed filesystem
 
 Create the utility-specific boundaries outside the repository:
 
@@ -87,7 +107,7 @@ game001.dat
 Do not rename or edit the source files. The older embedded-index form uses
 `game.dat`.
 
-## 5. Preflight before extraction
+## 6. Preflight before extraction
 
 ```text
 virtualauto driveclub list --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\files.json
@@ -97,7 +117,7 @@ This parses the upstream listing and rejects absolute paths, traversal,
 ambiguous separators, invalid Windows names, reserved names, case-insensitive
 collisions, and missing indexed data files. It does not extract payloads.
 
-## 6. Unpack the filesystem
+## 7. Unpack the filesystem
 
 ```text
 virtualauto driveclub unpack --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\output\filesystem
@@ -113,7 +133,7 @@ requires it. Older formats may not contain checksums, and upstream can disable
 that check internally; the manifest records the request rather than claiming a
 verification the tool did not perform.
 
-## 7. What the result is—and is not
+## 8. What the result is—and is not
 
 A successful filesystem unpack establishes only that the indexed payload tree
 was reproduced under the wrapper's structural checks. It does not establish:

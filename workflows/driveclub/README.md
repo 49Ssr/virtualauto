@@ -12,7 +12,8 @@ For the exact start-to-finish decision path, use the
 ```text
 lawfully accessible numbered PKG fragments or complete package
   -> guarded structural inspection and byte-exact assembly
-  -> package payload-access stage (ShadPKG is not VirtualAuto-wrapped)
+  -> guarded outer-entry listing and unencrypted metadata extraction
+  -> encrypted package payload-access boundary
   -> DriveClubFS indexed-filesystem stage (guarded wrapper)
   -> RPK resource stage (blocked pending output-path hardening)
   -> VirtualAuto Blender archaeology stage
@@ -41,11 +42,14 @@ altering them:
 ```text
 virtualauto pkg inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input
 virtualauto pkg assemble --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input --output D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\driveclub.pkg
+virtualauto pkg entries --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\driveclub.pkg
+virtualauto pkg extract-outer --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\driveclub.pkg --output D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\output\outer_entries
 ```
 
-This establishes container structure and byte continuity only. It does not
-decrypt the payload or replace the need for a base installation when the PKG is
-an update.
+The first two commands establish container structure and byte continuity. The
+last two retain only the public outer package layer, with entry hashes and an
+explicit list of encrypted entries that were skipped. None decrypt the PFS or
+replace the need for a base installation when the PKG is an update.
 
 ## Filesystem extraction
 
@@ -74,6 +78,8 @@ paths from resource names without a containment guard. VirtualAuto will add RPK
 extraction only after establishing explicit input/output ownership and path
 sanitisation.
 
-ShadPKG remains a pinned external instrument, but its package/decryption claims
-have not been reproduced by VirtualAuto. Use it only with data you are entitled
-to access; no keys, packages, or extracted resources belong in Git.
+ShadPKG remains a pinned external instrument, but its PFS scanner crashed on the
+private official update and its source contains unchecked failure paths.
+LibOrbisPkg independently confirmed that the PFS is encrypted and no key was
+available. Use package tools only with data you are entitled to access; no keys,
+packages, or extracted resources belong in Git.

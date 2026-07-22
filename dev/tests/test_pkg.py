@@ -7,7 +7,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from virtualauto.pkg import assemble_fragments, inspect_fragments
+from virtualauto.pkg import (
+    assemble_fragments,
+    extract_outer_entries,
+    inspect_fragments,
+    list_pkg_entries,
+)
 
 
 def build_sfo(values: dict[str, object]) -> bytes:
@@ -72,6 +77,48 @@ def create_fragment_set(directory: Path) -> tuple[bytes, list[Path]]:
     return bytes(package), parts
 
 
+def create_outer_package(path: Path) -> bytes:
+    package = bytearray(8192)
+    package[:4] = b"\x7fCNT"
+    struct.pack_into(">I", package, 0x04, 0x83000001)
+    struct.pack_into(">I", package, 0x0C, 3)
+    struct.pack_into(">I", package, 0x10, 3)
+    struct.pack_into(">I", package, 0x18, 0x500)
+    package[0x40:0x64] = b"EP9000-CUSA00003_00-TESTPACKAGE000".ljust(0x24, b"\0")
+    struct.pack_into(">I", package, 0x70, 0x0F)
+    struct.pack_into(">I", package, 0x74, 0x1A)
+    struct.pack_into(">I", package, 0x78, 0x42000000)
+    struct.pack_into(">Q", package, 0x410, 0x1000)
+    struct.pack_into(">Q", package, 0x418, 0x800)
+    struct.pack_into(">Q", package, 0x430, len(package))
+    sfo = build_sfo({"APP_VER": "01.28", "CATEGORY": "gp"})
+    share = b'{"version":"test"}\n'
+    encrypted = b"not plaintext"
+    struct.pack_into(
+        ">IIIIIIQ", package, 0x500, 0x1000, 0, 0, 0, 0x700, len(sfo), 0
+    )
+    struct.pack_into(
+        ">IIIIIIQ", package, 0x520, 0x100B, 0, 0, 0, 0x800, len(share), 0
+    )
+    struct.pack_into(
+        ">IIIIIIQ",
+        package,
+        0x540,
+        0x0402,
+        0,
+        0x80000000,
+        0x3000,
+        0x900,
+        len(encrypted),
+        0,
+    )
+    package[0x700 : 0x700 + len(sfo)] = sfo
+    package[0x800 : 0x800 + len(share)] = share
+    package[0x900 : 0x900 + len(encrypted)] = encrypted
+    path.write_bytes(package)
+    return bytes(package)
+
+
 class PackageFragmentTests(unittest.TestCase):
     def test_inspects_consecutive_fragment_set_and_sfo(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -126,6 +173,48 @@ class PackageFragmentTests(unittest.TestCase):
             create_fragment_set(root)
             with self.assertRaisesRegex(ValueError, "outside"):
                 assemble_fragments(root, root / "assembled.pkg")
+
+    def test_lists_outer_entries_and_encryption_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / "assembled.pkg"
+            create_outer_package(package)
+            report = list_pkg_entries(package)
+            self.assertEqual(report["entry_count"], 3)
+            self.assertEqual(report["entries"][1]["name"], "shareparam.json")
+            self.assertFalse(report["entries"][1]["encrypted"])
+            self.assertTrue(report["entries"][2]["encrypted"])
+            self.assertEqual(report["entries"][2]["key_index"], 3)
+
+    def test_extracts_only_unencrypted_outer_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "assembled.pkg"
+            create_outer_package(package)
+            output = root / "outer"
+            manifest = extract_outer_entries(package, output)
+            self.assertEqual(manifest["extracted_count"], 2)
+            self.assertEqual(manifest["skipped_count"], 1)
+            self.assertEqual(
+                (output / "shareparam.json").read_text(encoding="utf-8"),
+                '{"version":"test"}\n',
+            )
+            self.assertFalse((output / "nptitle.dat").exists())
+            retained = json.loads(
+                (output / "outer_entries.manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(retained["payload_status"], "encrypted-not-accessed")
+            with self.assertRaisesRegex(ValueError, "overwrite"):
+                extract_outer_entries(package, output)
+
+    def test_rejects_outer_entry_beyond_package_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / "assembled.pkg"
+            create_outer_package(package)
+            with package.open("r+b") as handle:
+                handle.seek(0x500 + 16)
+                handle.write(struct.pack(">II", 0x1F00, 0x200))
+            with self.assertRaisesRegex(ValueError, "boundary"):
+                list_pkg_entries(package)
 
 
 if __name__ == "__main__":

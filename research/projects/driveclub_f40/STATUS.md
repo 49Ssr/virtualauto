@@ -16,7 +16,7 @@
 - Archaeology plan: [F40 target plan](../../asset_archaeology/driveclub/F40_TARGET.md)
 - Private-source registration command: implemented and unit-tested
 - Blender structural inventory: executed successfully on a synthetic 5.0.1 fixture
-- DriveClubFS, ShadPKG, and 010GameTemplates: pinned as exact-commit
+- DriveClubFS, ShadPKG, LibOrbisPkg, and 010GameTemplates: pinned as exact-commit
   submodules; DriveClubFS has not yet been validated against an accessible
   indexed DriveClub filesystem
 - DriveClubFS build: reproduced from the pinned source with .NET SDK 9.0.316;
@@ -26,6 +26,9 @@
   1.28 update passed consecutive-index, single-header, uniform-chunk,
   declared-size, and immutable-source checks, then produced a checksummed
   19,191,300,096-byte private package
+- Outer-package stage: implemented and tested; the real package yielded 39
+  unencrypted outer entries with per-file SHA-256 records, while three encrypted
+  entries and the PFS payload were explicitly skipped
 - Indexed-filesystem wrapper: path-preflight and output verification are
   implemented and unit-tested; no real DriveClub filesystem has been supplied
 
@@ -73,11 +76,32 @@ These establish local byte custody and update identity. They do not establish
 distribution authenticity, payload decryption, a complete base installation,
 or permission to redistribute the package.
 
+## Package-tool observations
+
+`OBS-INSTRUMENT`, reproduced on 2026-07-22:
+
+- ShadPKG `sfo-info` agreed with the VirtualAuto package identity.
+- ShadPKG `pfs-info` crashed with access violation `0xC0000005` before listing
+  files. Source review found unchecked invalid-RSA-result and missing-PFSC-magic
+  paths that can feed invalid pointer arithmetic.
+- LibOrbisPkg enumerated all 42 outer entries and validated the full PFS image,
+  package body, digest table, entry groups, and package-header digest.
+- LibOrbisPkg disagreed with five higher-level digests. This is retained as an
+  unresolved validator/package-format discrepancy rather than silently treated
+  as package corruption.
+- LibOrbisPkg refused payload enumeration because the PFS is encrypted and no
+  decryption key was supplied.
+- VirtualAuto copied 39 unencrypted outer entries and skipped `.image_key`,
+  `nptitle.dat`, and `npbind.dat` as encrypted. The accessible set includes
+  `param.sfo`, PlayGo metadata for 96 chunks, update notes, images, delta tables,
+  and trophy containers.
+
 ## Blockers
 
 - matching base package or an installed-and-updated root remains necessary;
-- package payload access has not passed VirtualAuto's containment and
-  reproducibility requirements;
+- package payload access is blocked by encryption/key availability, not by the
+  five-part assembly; the matching base or an accessible installed root remains
+  the practical next source;
 - exact existing-export provenance and exporter are unknown;
 - no fresh Blender 5.0.1 forensic report exists;
 - original mesh/material/hierarchy resources have not been catalogued;
@@ -122,8 +146,13 @@ from this checkout.
   an update from 1.27 to 1.28 rather than a base installation.
 - Assembled a new private package through the guarded PKG stage and retained
   fragment/output hashes plus the operation manifest outside Git.
-- Kept package payload extraction blocked pending a reviewed, contained access
-  path and a matching base/root source.
+- Built and tested pinned ShadPKG; retained its successful SFO result, PFS crash,
+  and source-level failure analysis without running its write extractor.
+- Built and tested pinned LibOrbisPkg as an independent parser; retained both
+  its successful whole-PFS/body validation and its higher-level digest
+  disagreements.
+- Added a VirtualAuto-owned, containment-checked outer-entry extractor and ran
+  it on the real package. Encrypted entries and the PFS remain untouched.
 
 ### 2026-07-20
 

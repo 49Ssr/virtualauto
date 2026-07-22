@@ -15,7 +15,12 @@ from .doctor import diagnose
 from .driveclub import build_driveclubfs, unpack_filesystem, write_listing_report
 from .evidence import ARTIFACT_TYPES, RIGHTS_STATUSES, record_evidence
 from .paths import repository_root
-from .pkg import assemble_fragments, inspect_fragments
+from .pkg import (
+    assemble_fragments,
+    extract_outer_entries,
+    inspect_fragments,
+    list_pkg_entries,
+)
 from .research import find_sections, get_section
 from .workspace import initialise_workspace
 
@@ -121,6 +126,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     assemble.add_argument("--input", required=True)
     assemble.add_argument("--output", required=True)
+    entries = package_commands.add_parser(
+        "entries", help="list the public outer entry table of one assembled PKG"
+    )
+    entries.add_argument("--input", required=True)
+    extract_outer = package_commands.add_parser(
+        "extract-outer",
+        help="copy only unencrypted outer PKG entries to a fresh directory",
+    )
+    extract_outer.add_argument("--input", required=True)
+    extract_outer.add_argument("--output", required=True)
 
     research = subcommands.add_parser(
         "research", help="retrieve exact sections from the canonical master"
@@ -290,6 +305,14 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if args.pkg_command == "assemble":
                 manifest = assemble_fragments(args.input, args.output)
+                print(json.dumps(manifest, indent=2, ensure_ascii=False))
+                return 0
+            if args.pkg_command == "entries":
+                report = list_pkg_entries(args.input)
+                print(json.dumps(report, indent=2, ensure_ascii=False))
+                return 0
+            if args.pkg_command == "extract-outer":
+                manifest = extract_outer_entries(args.input, args.output)
                 print(json.dumps(manifest, indent=2, ensure_ascii=False))
                 return 0
             raise AssertionError(f"Unhandled PKG command: {args.pkg_command}")

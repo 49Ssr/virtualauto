@@ -17,6 +17,46 @@ MINIMUM_HEADER_SIZE = PKG_SIZE_OFFSET + 8
 COPY_BLOCK_SIZE = 16 * 1024 * 1024
 FRAGMENT_NAME = re.compile(r"^(?P<stem>.+)_(?P<index>\d+)\.pkg$", re.IGNORECASE)
 
+PKG_ENTRY_NAMES = {
+    0x00000001: ".digests",
+    0x00000010: ".entry_keys",
+    0x00000020: ".image_key",
+    0x00000080: ".general_digests",
+    0x00000100: ".metas",
+    0x00000200: ".entry_names",
+    0x00000400: "license.dat",
+    0x00000401: "license.info",
+    0x00000402: "nptitle.dat",
+    0x00000403: "npbind.dat",
+    0x00000404: "selfinfo.dat",
+    0x00000406: "imageinfo.dat",
+    0x00000407: "target-deltainfo.dat",
+    0x00000408: "origin-deltainfo.dat",
+    0x00000409: "psreserved.dat",
+    0x00001000: "param.sfo",
+    0x00001001: "playgo-chunk.dat",
+    0x00001002: "playgo-chunk.sha",
+    0x00001003: "playgo-manifest.xml",
+    0x00001004: "pronunciation.xml",
+    0x00001005: "pronunciation.sig",
+    0x00001006: "pic1.png",
+    0x00001007: "pubtoolinfo.dat",
+    0x00001008: "app/playgo-chunk.dat",
+    0x00001009: "app/playgo-chunk.sha",
+    0x0000100A: "app/playgo-manifest.xml",
+    0x0000100B: "shareparam.json",
+    0x0000100C: "shareoverlayimage.png",
+    0x0000100D: "save_data.png",
+    0x0000100E: "shareprivacyguardimage.png",
+    0x00001200: "icon0.png",
+    0x00001220: "pic0.png",
+    0x00001240: "snd0.at9",
+    0x00001260: "changeinfo/changeinfo.xml",
+    0x00001280: "icon0.dds",
+    0x000012A0: "pic0.dds",
+    0x000012C0: "pic1.dds",
+}
+
 
 def _read_exact(path: Path, offset: int, size: int) -> bytes:
     with path.open("rb") as handle:
@@ -115,6 +155,169 @@ def _read_pkg_metadata(first_fragment: Path) -> dict[str, object]:
     else:
         metadata["param_sfo"] = None
     return metadata
+
+
+def _entry_name(entry_id: int, index: int) -> str:
+    if entry_id in PKG_ENTRY_NAMES:
+        return PKG_ENTRY_NAMES[entry_id]
+    if 0x00001201 <= entry_id <= 0x0000121F:
+        return f"icon0_{entry_id - 0x00001201:02d}.png"
+    if 0x00001241 <= entry_id <= 0x0000125F:
+        return f"pic1_{entry_id - 0x00001241:02d}.png"
+    if 0x00001261 <= entry_id <= 0x0000127F:
+        return f"changeinfo/changeinfo_{entry_id - 0x00001261:02d}.xml"
+    if 0x00001281 <= entry_id <= 0x0000129F:
+        return f"icon0_{entry_id - 0x00001281:02d}.dds"
+    if 0x000012C1 <= entry_id <= 0x000012DF:
+        return f"pic1_{entry_id - 0x000012C1:02d}.dds"
+    if 0x00001400 <= entry_id <= 0x00001463:
+        return f"trophy/trophy{entry_id - 0x00001400:02d}.trp"
+    return f"unknown/entry_{index:03d}_0x{entry_id:08X}.bin"
+
+
+def list_pkg_entries(input_path: str | Path) -> dict[str, object]:
+    """List the outer PKG entry table without decrypting the PFS payload."""
+    package = Path(input_path).expanduser().resolve()
+    if not package.is_file():
+        raise ValueError(f"PKG input does not exist: {package}")
+    header = _read_exact(package, 0, 0x440)
+    if header[:4] != PKG_MAGIC:
+        raise ValueError(f"Input has no PS4 PKG header: {package.name}")
+    entry_count = struct.unpack_from(">I", header, 0x10)[0]
+    table_offset = struct.unpack_from(">I", header, 0x18)[0]
+    if entry_count > 1_000_000:
+        raise ValueError(f"Implausible PKG entry count: {entry_count}")
+    table_size = entry_count * 32
+    file_size = package.stat().st_size
+    if table_offset + table_size > file_size:
+        raise ValueError("PKG entry table exceeds the package boundary")
+    table = _read_exact(package, table_offset, table_size)
+
+    entries: list[dict[str, object]] = []
+    for index in range(entry_count):
+        entry_id, name_offset, flags1, flags2, offset, size, _padding = (
+            struct.unpack_from(">IIIIIIQ", table, index * 32)
+        )
+        if offset + size > file_size:
+            raise ValueError(
+                f"PKG entry {index} exceeds the package boundary: "
+                f"0x{offset:X} + 0x{size:X} > 0x{file_size:X}"
+            )
+        entries.append(
+            {
+                "index": index,
+                "id": f"0x{entry_id:08X}",
+                "name": _entry_name(entry_id, index),
+                "name_table_offset": name_offset,
+                "flags1": f"0x{flags1:08X}",
+                "flags2": f"0x{flags2:08X}",
+                "encrypted": bool(flags1 & 0x80000000),
+                "key_index": (flags2 & 0xF000) >> 12,
+                "offset": offset,
+                "byte_size": size,
+            }
+        )
+    metadata = _read_pkg_metadata(package)
+    return {
+        "report_version": "1.0.0",
+        "operation": "outer-pkg-entry-table-inspection",
+        "input": str(package),
+        "package_byte_size": file_size,
+        "package": metadata,
+        "entry_count": entry_count,
+        "entries": entries,
+        "limits": [
+            "Outer entry inspection does not decrypt or enumerate PFS payload files.",
+            "Known names are format mappings; unknown IDs are preserved by "
+            "index and ID.",
+            "An encrypted entry is never treated as plaintext.",
+        ],
+    }
+
+
+def extract_outer_entries(
+    input_path: str | Path, output_directory: str | Path
+) -> dict[str, object]:
+    """Copy only unencrypted outer PKG entries into a fresh output directory."""
+    report = list_pkg_entries(input_path)
+    package = Path(input_path).expanduser().resolve()
+    output = Path(output_directory).expanduser().resolve()
+    partial = output.with_name(output.name + ".partial")
+    for candidate in (output, partial):
+        if candidate.exists():
+            raise ValueError(f"Refusing to overwrite existing output: {candidate}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    partial.mkdir()
+
+    extracted: list[dict[str, object]] = []
+    skipped: list[dict[str, object]] = []
+    try:
+        with package.open("rb") as source:
+            for entry in report["entries"]:
+                if entry["encrypted"]:
+                    skipped.append(
+                        {
+                            "index": entry["index"],
+                            "id": entry["id"],
+                            "name": entry["name"],
+                            "reason": "encrypted-outer-entry",
+                        }
+                    )
+                    continue
+                destination = (partial / str(entry["name"])).resolve()
+                try:
+                    destination.relative_to(partial)
+                except ValueError as error:
+                    raise ValueError(
+                        f"Resolved entry path escapes output: {entry['name']}"
+                    ) from error
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                digest = hashlib.sha256()
+                remaining = int(entry["byte_size"])
+                source.seek(int(entry["offset"]))
+                with destination.open("xb") as target:
+                    while remaining:
+                        block = source.read(min(COPY_BLOCK_SIZE, remaining))
+                        if not block:
+                            raise ValueError(
+                                f"Unexpected EOF while copying entry {entry['index']}"
+                            )
+                        target.write(block)
+                        digest.update(block)
+                        remaining -= len(block)
+                extracted.append(
+                    {
+                        "index": entry["index"],
+                        "id": entry["id"],
+                        "name": entry["name"],
+                        "byte_size": entry["byte_size"],
+                        "sha256": digest.hexdigest(),
+                    }
+                )
+
+        manifest: dict[str, object] = {
+            "manifest_version": "1.0.0",
+            "operation": "unencrypted-outer-pkg-entry-extraction",
+            "created_at": datetime.now(UTC).isoformat(),
+            "source_input_immutable": True,
+            "input": str(package),
+            "package_byte_size": report["package_byte_size"],
+            "package": report["package"],
+            "extracted_count": len(extracted),
+            "skipped_count": len(skipped),
+            "extracted_entries": extracted,
+            "skipped_entries": skipped,
+            "payload_status": "encrypted-not-accessed",
+            "limits": report["limits"],
+        }
+        _write_json_atomic(partial / "outer_entries.manifest.json", manifest)
+        os.replace(partial, output)
+    except Exception:
+        if partial.exists() and partial.parent == output.parent:
+            shutil.rmtree(partial)
+        raise
+    manifest["output_directory"] = str(output)
+    return manifest
 
 
 def _discover_fragments(input_path: str | Path) -> tuple[Path, str, list[Path]]:
