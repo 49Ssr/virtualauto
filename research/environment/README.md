@@ -62,6 +62,7 @@ phenomenon twice.
 - [Camera, colour, and compositing boundaries](CAMERA_COLOR_AND_COMPOSITING.md)
 - [Blender 5.0.1 implementation cards](BLENDER_IMPLEMENTATION_CARDS.md)
 - [Validation and experiment backlog](VALIDATION_AND_EXPERIMENTS.md)
+- [Claim-to-source map](CLAIM_SOURCE_MAP.md)
 - [Open questions and contradictions](OPEN_QUESTIONS_AND_CONTRADICTIONS.md)
 - [Source register](SOURCE_REGISTER.md)
 
