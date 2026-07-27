@@ -11,6 +11,9 @@ authoritative when generated retrieval views are introduced later.
   tolerances, and surface validation.
 - [`rendering/`](rendering/README.md) — lighting, cameras, sampling, colour, and
   render validation.
+- [`environment/`](environment/README.md) — sky, atmosphere, aerosols, HDRI,
+  roads, terrain, weather, vegetation, surface state, and camera/environment
+  ownership.
 - [`asset_archaeology/`](asset_archaeology/README.md) — source formats,
   extraction provenance, unknown fields, and semantic recovery.
 - [`blender_workflows/`](blender_workflows/README.md) — version-specific Blender
