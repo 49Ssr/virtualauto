@@ -114,6 +114,7 @@ phenomenon twice.
 - [Weather and hydrometeors](WEATHER_AND_HYDROMETEORS.md)
 - [Built environment and vegetation](BUILT_ENVIRONMENT_AND_VEGETATION.md)
 - [Camera, colour, and compositing boundaries](CAMERA_COLOR_AND_COMPOSITING.md)
+- [Real camera and atmosphere pipeline](REAL_CAMERA_AND_ATMOSPHERE_PIPELINE.md)
 - [Claim-to-source map](CLAIM_SOURCE_MAP.md)
 - [Open questions and contradictions](OPEN_QUESTIONS_AND_CONTRADICTIONS.md)
 - [Source register](SOURCE_REGISTER.md)

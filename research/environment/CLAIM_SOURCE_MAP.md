@@ -37,6 +37,9 @@ evidence and workflow goals rather than quotations from a source.
 | `CLM-ENV-028` | A visible emitter and a separate light can double count one physical source. | `VA-RULE` | `SRC-ENV-BLENDER-NODES-5.0` | Contribution passes are required; no universal split is prescribed. |
 | `CLM-ENV-029` | Environment qualification must include motion because HDRI defects, LOD, procedural swimming, volume stepping, and reflection discontinuities can be invisible in one still. | `VA-RULE` | Domain synthesis | Requires retained motion evidence before production qualification. |
 | `CLM-ENV-030` | Material parameters should not be retuned to compensate for unresolved environment bandwidth, horizon, exposure, or sun ownership. | `VA-RULE` | Domain synthesis | The correction owner must be recorded before promotion. |
+| `CLM-ENV-031` | Blender Volume Coefficients accepts per-distance absorption and scattering coefficients, making measured or visibility-derived inputs preferable to an unexplained density scalar. | `BLENDER-DOC` + `VA-INFERENCE` | `SRC-ENV-BLENDER-VOLUME-COEFFICIENTS-5.0` | A visibility relation does not recover particle composition, vertical structure, or full spectral scattering. |
+| `CLM-ENV-032` | Lensfun calibrations may separately depend on focal length, aperture, and focus distance and can include polynomial distortion, TCA, and vignetting models. | `UPSTREAM-DOC` | `SRC-ENV-LENSFUN-MANUAL`, `SRC-ENV-LENSFUN-CALIBRATION` | Blender's single-factor Lens Distortion node is not an equivalent representation. |
+| `CLM-ENV-033` | A perspective/thin-lens camera does not reproduce the radiometry and aberrations of a traced multi-element lens prescription. | `PRIMARY-IMPLEMENTATION` | `SRC-ENV-PBRT-REALISTIC-CAMERA` | Use calibrated image-space models or a traced optical system when those effects matter. |
 
 ## Conversion rule
 

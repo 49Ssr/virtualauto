@@ -63,6 +63,43 @@ it has been independently reproduced by VirtualAuto.
 - Source: [Blender 5.0 Manual — Shader Nodes Introduction](https://docs.blender.org/manual/en/5.0/render/shader_nodes/introduction.html)
 - Use: surface, volume, emission, and background shader ownership.
 
+### SRC-ENV-BLENDER-VOLUME-COEFFICIENTS-5.0
+
+- Class: `BLENDER-DOC`
+- Source: [Blender 5.0 Manual — Volume Coefficients](https://docs.blender.org/manual/en/5.0/render/shader_nodes/shader/volume_coefficients.html)
+- Use: per-distance absorption, scattering, and emission coefficients plus
+  supported scattering phase functions.
+- Limitation: the node accepts parameters; it does not establish that a chosen
+  atmosphere profile was measured or fitted.
+
+## Camera and lens calibration references
+
+### SRC-ENV-LENSFUN-MANUAL
+
+- Class: `UPSTREAM-DOC`
+- Source: [Lensfun manual](https://lensfun.github.io/manual/latest/)
+- Use: open calibration database and reversible correction/simulation support
+  for distortion, transverse chromatic aberration, and vignetting.
+- Limitation: coverage and calibration completeness vary by lens.
+
+### SRC-ENV-LENSFUN-CALIBRATION
+
+- Class: `UPSTREAM-DOC`
+- Source: [Lensfun calibration data format](https://lensfun.github.io/manual/v0.3.1/elem_calibration.html)
+- Audited database commit: `698a39eea69be00f4f25b6da6c1ad34b1f162b50`
+- Use: exact distortion, TCA, and aperture/distance-dependent vignetting model
+  fields used by Lensfun profiles.
+- Limitation: coefficients must be evaluated with the matching Lensfun model;
+  they are not Blender Lens Distortion values.
+
+### SRC-ENV-PBRT-REALISTIC-CAMERA
+
+- Class: `PRIMARY-IMPLEMENTATION`
+- Source: [PBRT — Realistic Cameras](https://www.pbr-book.org/3ed-2018/Camera_Models/Realistic_Cameras)
+- Use: reference implementation for tracing rays through multi-element lens
+  prescriptions and the resulting radiometric and aberration effects.
+- Limitation: this is not Blender's native camera model.
+
 ## Daylight and atmospheric rendering research
 
 ### SRC-ENV-PREETHAM-1999

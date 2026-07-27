@@ -7,6 +7,8 @@
 ## Current baseline
 
 - Blender production baseline: `5.0.1`
+- Live MCP restoration build: Blender `5.2.0 LTS`; this is recorded separately
+  and does not relabel earlier 5.0.1 synthetic evidence
 - Original package or installed root: a private European `CUSA00003` 1.28
   update and a separate 1.28-labelled full-size container have been inspected;
   its extracted indexed filesystem is a sparse patch/repack composition and
@@ -33,6 +35,37 @@
 - Indexed-filesystem wrapper: path-preflight and output verification are
   implemented and unit-tested; the new read-only structural inspector has run
   against a real filesystem and classified it without extracting payloads
+
+## Private Blender working-copy state
+
+`OBS-INSTRUMENT`, live MCP session on 2026-07-27; files remain outside Git:
+
+- the current private working copy is `F40_MCP.blend` under the user's F40
+  project directory;
+- imported exterior materials, windows, lamps, badges, grilles, engine-bay
+  parts, and preserved material slots have received a first controlled repair
+  pass; this does not establish original DriveClub shader fidelity;
+- a pre-camera/atmosphere checkpoint and two 640 x 360 A/B renders were retained
+  in the private project directory;
+- the active World uses its Sky Texture through an explicit Background closure,
+  with a 0.533-degree solar angular diameter and no second Sun-light owner;
+- a closed 120 x 120 x 42 m Cycles volume now owns local mist transport;
+- ground visibility is an explicit 1500 m implementation prior, producing an
+  extinction coefficient of 0.002608 1/m, split into scattering and absorption
+  by a 0.95 single-scatter-albedo prior;
+- the volume uses Blender 5.2 Volume Coefficients with a Mie phase function,
+  12 um particle-diameter prior, and vertical density falloff;
+- Mist, Z, Environment, Normal, and denoising-data passes are enabled, but Mist
+  is disconnected from beauty and labelled diagnostic-only;
+- the compositor order is noisy scene-linear radiance, guided denoise, neutral
+  lens geometry/TCA, a disabled unmeasured PSF approximation, then output;
+- the 36 x 24 mm / 50 mm camera remains an ideal uncalibrated camera. A pinned
+  Lensfun Canon EF 50 mm f/1.8 STM profile is retained only as a disabled
+  candidate because Blender's one-factor Lens Distortion node cannot represent
+  the full calibration model.
+
+The active research contract is documented in
+[Real camera and atmosphere pipeline](../../environment/REAL_CAMERA_AND_ATMOSPHERE_PIPELINE.md).
 
 ## Sparse-filesystem findings
 
@@ -182,6 +215,17 @@ record has been fabricated: private packages, exports, partial RPK data, and
 extracted assets remain absent from this checkout.
 
 ## Changelog
+
+### 2026-07-27
+
+- Recorded the first live Blender 5.2 F40 restoration state without committing
+  private game-derived assets or the `.blend` file.
+- Replaced compositor-only atmosphere intent with a bounded, coefficient-driven
+  Mie volume illuminated by the same World sky as the car.
+- Preserved Mist Pass as a diagnostic rather than a lighting claim.
+- Added an explicitly neutral camera pipeline and a pinned, disabled Lensfun
+  candidate instead of inventing lens distortion, TCA, vignetting, or PSF.
+- Retained atmosphere-off and atmosphere-on comparison renders outside Git.
 
 ### 2026-07-22
 
