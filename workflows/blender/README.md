@@ -7,6 +7,7 @@ diagnostics, performance assumptions, and validation status.
 - [`addon/virtualauto_blender/`](addon/virtualauto_blender/) contains the first
   artist-facing development add-on.
 - [`scripts/`](scripts/README.md) contains Blender-hosted headless entrypoints.
+- [`mcp/`](mcp/README.md) pins and operates the official live Blender bridge.
 - [Verified Blender 5.0.1 Windows toolchain record](toolchains/BLD-BLENDER-501-WINDOWS-X64.json)
 
 `virtualauto blender-smoke` is the first accepted structural path. It creates a
@@ -30,6 +31,13 @@ It remains deliberately narrow. It does not compile materials or claim to
 recover DriveClub parameters. A distributable Blender Extension package is also
 deferred until the repository's own software licence is explicitly selected;
 the current code is tested as a repository-hosted development add-on.
+
+## Live control
+
+Interactive Blender 5.2 control uses the separately installed official Blender
+MCP connector. It does not import `bpy` into the ordinary VirtualAuto CLI. The
+first connection to any asset is read-only, and broad edits require a saved
+working copy plus a named checkpoint. See the [live-control runbook](mcp/README.md).
 
 ## Future shader and Geometry Nodes ownership
 

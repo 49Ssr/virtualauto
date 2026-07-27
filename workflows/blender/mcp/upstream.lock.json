@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../lab/schemas/blender-mcp-upstream.schema.json",
+  "schema_version": "1.0.0",
+  "verified_at": "2026-07-27",
+  "upstream": {
+    "project_url": "https://www.blender.org/lab/mcp-server/",
+    "repository_url": "https://projects.blender.org/lab/blender_mcp",
+    "tag": "v1.0.0",
+    "commit": "03004fd0216bfe5e0a3d9ac9b47d5efadc3d78c4"
+  },
+  "release": {
+    "page_url": "https://projects.blender.org/lab/blender_mcp/releases/tag/v1.0.0",
+    "addon_url": "https://projects.blender.org/lab/blender_mcp/releases/download/v1.0.0/mcp-1.0.0.zip",
+    "addon_sha256": "838c3449f01015c861290658ae67f122f0846f7882f60a5dfda0ef7e6a9b8403",
+    "source_archive_url": "https://projects.blender.org/lab/blender_mcp/archive/v1.0.0.zip",
+    "source_archive_sha256": "d950bc421542fb17515896d46aab074054f9f34ac4f898fd4376a59e8bb94f19"
+  },
+  "compatibility": {
+    "upstream_minimum_blender": "5.1.0",
+    "virtualauto_live_target": "5.2.0"
+  },
+  "security_boundary": {
+    "bind": "localhost:9876",
+    "arbitrary_python_execution": true,
+    "upstream_sandbox_strength": "weak",
+    "virtualauto_policy": "Use a saved working copy, keep the bridge loopback-only, inspect before mutation, checkpoint before broad edits, and retain evidence of consequential operations."
+  }
+}

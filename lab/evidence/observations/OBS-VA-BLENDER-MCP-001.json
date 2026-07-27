@@ -1,0 +1,37 @@
+{
+  "$schema": "../../schemas/observation.schema.json",
+  "schema_version": "1.1.0",
+  "id": "OBS-VA-BLENDER-MCP-001",
+  "experiment_id": "EXP-VA-BLENDER-MCP-001",
+  "recorded_at": "2026-07-27T12:59:35Z",
+  "observer": "VirtualAuto live-control smoke harness",
+  "asset_or_sample": "Blender factory startup scene",
+  "part_or_region": "MCP transport only",
+  "raw_observation": "The loopback socket probe returned Blender 5.2.0 LTS metadata, and a stdio MCP client enumerated 26 tools before get_blendfile_summary_path_info returned status ok for the same unsaved, unmodified scene.",
+  "measurement": {
+    "mcp_tool_count": 26,
+    "bridge_port": 9876,
+    "object_count": 3,
+    "material_count": 2,
+    "image_count": 2
+  },
+  "candidate_causes": [
+    "The checksum-verified add-on and pinned official server were mutually compatible with Blender 5.2.0 LTS."
+  ],
+  "interpretation": "The pinned transport is operational for read-only live Blender calls on this Windows host.",
+  "discriminating_tests": [
+    "Repeat the read-only path and datablock summaries against the saved F40 working copy after Blender restarts.",
+    "Exercise a scoped reversible mutation only after an incremental file checkpoint."
+  ],
+  "evidence_ids": [
+    "EVD-VA-BLENDER-MCP-001"
+  ],
+  "confidence": "high",
+  "confidence_basis": "Both the direct socket protocol and the complete stdio MCP client path returned successful structured responses.",
+  "confounders": [
+    "The test used an empty background scene rather than the interactive F40 file.",
+    "No viewport capture or mutation was attempted."
+  ],
+  "status": "reproduced",
+  "decision": "accept-interpretation"
+}
