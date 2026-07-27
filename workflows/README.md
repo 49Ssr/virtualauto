@@ -6,3 +6,4 @@ data ignored while retaining the instructions and directory contract.
 
 - [DriveClub extraction and reconstruction](driveclub/README.md)
 - [Blender implementation and diagnostics](blender/README.md)
+- [Environment profile and qualification workflow](environment/README.md)

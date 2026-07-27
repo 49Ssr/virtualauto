@@ -3,15 +3,16 @@
 An evidence-driven automotive Blender and asset-archaeology laboratory.
 
 VirtualAuto connects source provenance, semantic recovery, physically grounded
-materials, Blender implementation, and retained validation evidence. It does
-not contain proprietary DriveClub packages or extracted game assets.
+materials, environments, Blender implementation, and retained validation
+evidence. It does not contain proprietary DriveClub packages or extracted game
+assets.
 
 ## Repository map
 
 | Area | Use it for |
 | --- | --- |
-| [`research/`](research/README.md) | Automotive knowledge, project records, and the authoritative R&D master |
-| [`workflows/`](workflows/README.md) | DriveClub extraction and Blender operating procedures |
+| [`research/`](research/README.md) | Automotive materials, geometry, environment, project records, and the authoritative R&D master |
+| [`workflows/`](workflows/README.md) | DriveClub extraction, Blender operation, and environment qualification procedures |
 | [`lab/`](lab/README.md) | Experiments, evidence, schemas, examples, and governance |
 | [`external/`](external/README.md) | Audited and pinned third-party research instruments |
 | [`dev/`](dev/README.md) | Repository maintenance scripts and tests |
@@ -26,6 +27,10 @@ The full ownership rules are documented in the
 - Interactive live-control target: Blender `5.2.0 LTS`
 - First archaeology target: DriveClub Ferrari F40
 - Pinned operational extractor: DriveClubFS
+- Environment research: sky, atmosphere, aerosols, HDRI, roads, terrain,
+  weather, surface state, built context, camera boundaries, and an initial
+  schema-backed profile contract; no environment profile is yet claimed
+  production-qualified
 - Repository state: guarded extraction, deterministic research retrieval, a
   Blender asset-audit panel, and the first accepted coordinate-math invariant;
   no claim of completed DriveClub model conversion or production material
@@ -39,6 +44,12 @@ The exact Automotive Body R&D v5 master is preserved at
 [Automotive_Body_RnD_Master.md](research/automotive_materials/Automotive_Body_RnD_Master.md).
 Its generated [heading index](research/indexes/automotive_master.index.json) is
 only a retrieval aid and never replaces the master.
+
+The first-class [environment domain](research/environment/README.md) separates
+far-field radiance, direct emitters, participating media, roads and terrain,
+weather, finite reflection structure, and camera/display ownership. Its
+[operating workflow](workflows/environment/README.md) starts with controlled
+F40 windshield and paint diagnostics rather than a beauty-scene preset.
 
 Retrieve focused, checksum-bound sections without deleting history:
 
