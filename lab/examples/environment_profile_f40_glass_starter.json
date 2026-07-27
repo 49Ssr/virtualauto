@@ -1,0 +1,218 @@
+{
+  "$schema": "../schemas/environment-profile.schema.json",
+  "schema_version": "1.0.0",
+  "id": "ENV-EXAMPLE-F40-GLASS-STARTER",
+  "name": "Fictional F40 glass diagnostic starter",
+  "status": "P2-buildable",
+  "blender_version": "5.0.1",
+  "render_engine": "Cycles",
+  "purpose": "Provide deterministic implementation defaults for a minimal asymmetric F40 glass and normal diagnostic corridor; this remains fictional executable documentation rather than retained F40 evidence.",
+  "source_ids": [
+    "SRC-ENV-BLENDER-WORLD-5.0",
+    "SRC-ENV-BLENDER-NODES-5.0"
+  ],
+  "ownership": [
+    "constant neutral World owns broad far-field fill",
+    "one overhead Area light owns general direct illumination",
+    "two emissive finite panels own asymmetric bright reflection bands",
+    "one dark diffuse panel owns a reflection absorber region",
+    "a dry neutral road owns visible ground and lower-hemisphere contact",
+    "no atmosphere or weather contribution exists in this profile"
+  ],
+  "world": {
+    "mode": "constant",
+    "visible_to_camera": true,
+    "lighting_owner": "neutral diagnostic far-field fill only",
+    "asset_id": null,
+    "parameters": {
+      "background_color": {
+        "value": [0.18, 0.18, 0.18],
+        "unit": "scene-linear RGB implementation value",
+        "status": "implementation-default",
+        "source_ids": [],
+        "notes": "Deterministic neutral starter value; not a measured sky or calibrated grey environment."
+      },
+      "background_strength": {
+        "value": 0.35,
+        "unit": "Blender Background Strength",
+        "status": "implementation-default",
+        "source_ids": [],
+        "notes": "Chosen for diagnostic readability and intended to remain fixed across comparison variants."
+      }
+    }
+  },
+  "direct_lighting": {
+    "sun_owner": "none",
+    "parameters": {},
+    "other_emitters": [
+      {
+        "name": "VA_ENV_DIAG_OverheadFill",
+        "role": "broad neutral direct fill",
+        "parameters": {
+          "type": {
+            "value": "AREA",
+            "unit": "Blender light type",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "No solar or real-fixture interpretation."
+          },
+          "energy": {
+            "value": 700,
+            "unit": "Blender Area light energy",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "Diagnostic starter value, not photometric calibration."
+          },
+          "size": {
+            "value": 7,
+            "unit": "metres",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "Broad source intended to avoid small highlight clutter."
+          }
+        }
+      },
+      {
+        "name": "VA_ENV_DIAG_LeftBand",
+        "role": "large neutral emissive reflection band",
+        "parameters": {
+          "dimensions": {
+            "value": [0.08, 7.0, 3.2],
+            "unit": "metres in object local axes",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "Finite geometry for broad asymmetric reflection movement."
+          },
+          "emission_strength": {
+            "value": 3.0,
+            "unit": "Blender Emission Strength",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "Not radiometrically calibrated."
+          }
+        }
+      },
+      {
+        "name": "VA_ENV_DIAG_RightBand",
+        "role": "smaller cool emissive reflection band",
+        "parameters": {
+          "dimensions": {
+            "value": [0.08, 3.5, 2.2],
+            "unit": "metres in object local axes",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "Different size and placement prevent bilateral reflection symmetry."
+          },
+          "emission_strength": {
+            "value": 1.5,
+            "unit": "Blender Emission Strength",
+            "status": "implementation-default",
+            "source_ids": [],
+            "notes": "Not radiometrically calibrated."
+          }
+        }
+      }
+    ]
+  },
+  "atmosphere": {
+    "representation": "none",
+    "bounded": false,
+    "parameters": {},
+    "visibility_targets": []
+  },
+  "ground": {
+    "construction_class": "neutral diagnostic road slab",
+    "surface_state": "dry",
+    "world_scale_m": 30,
+    "parameters": {
+      "dimensions": {
+        "value": [30.0, 20.0, 0.15],
+        "unit": "metres",
+        "status": "implementation-default",
+        "source_ids": [],
+        "notes": "Large enough for the initial static and orbit diagnostic."
+      },
+      "base_color": {
+        "value": [0.035, 0.035, 0.035],
+        "unit": "scene-linear RGB implementation value",
+        "status": "implementation-default",
+        "source_ids": [],
+        "notes": "Neutral dark ground; not a measured asphalt reflectance."
+      },
+      "roughness": {
+        "value": 0.72,
+        "unit": "Blender Principled Roughness",
+        "status": "implementation-default",
+        "source_ids": [],
+        "notes": "No procedural road texture is present in the Level 0 diagnostic."
+      }
+    }
+  },
+  "weather": {
+    "type": "none; static dry diagnostic",
+    "cloud_state": {
+      "value": "none",
+      "unit": "categorical",
+      "status": "implementation-default",
+      "source_ids": [],
+      "notes": "Cloud reflections would add an unnecessary moving frequency field."
+    },
+    "precipitation": {
+      "value": "none",
+      "unit": "categorical",
+      "status": "implementation-default",
+      "source_ids": [],
+      "notes": "Rain and windshield water are forbidden until the glass fault is classified."
+    },
+    "wind": {
+      "value": [0, 0, 0],
+      "unit": "metres per second in world axes",
+      "status": "implementation-default",
+      "source_ids": [],
+      "notes": "No animated environmental system exists in this profile."
+    },
+    "recent_history": "Dry diagnostic state with no physical weather-history claim."
+  },
+  "camera": {
+    "exposure": {
+      "value": 0,
+      "unit": "Blender exposure offset",
+      "status": "implementation-default",
+      "source_ids": [],
+      "notes": "Must remain fixed during comparison; adjust only in a separately recorded calibration pass."
+    },
+    "white_balance": {
+      "value": "no deliberate additional adjustment",
+      "unit": "categorical scene setting",
+      "status": "implementation-default",
+      "source_ids": [],
+      "notes": "The executed scene must still record its exact colour-management state."
+    },
+    "display_transform": "record the exact active Blender 5.0.1 view transform and look at execution; do not change it between variants",
+    "lens": {
+      "value": 50,
+      "unit": "millimetres on a 36 mm sensor-width implementation default",
+      "status": "implementation-default",
+      "source_ids": [],
+      "notes": "One diagnostic camera only; additional orbit views must retain explicit transforms."
+    },
+    "post_effects": []
+  },
+  "diagnostics": [
+    "broad left and right reflection bands can be hidden independently",
+    "dark absorber can be hidden independently",
+    "chrome grey black-gloss and glass proxy spheres are present",
+    "no atmosphere weather HDRI or compositor effect is active",
+    "windshield material sequence proceeds from opaque grey to specular to minimal glass",
+    "camera and environment movement are tested independently",
+    "Cycles is the first classification engine before an EEVEE comparison"
+  ],
+  "limitations": [
+    "No value is a radiometric or photometric measurement.",
+    "The profile has not been executed against the private F40 export by the repository change that introduced it.",
+    "The script does not inspect or modify the F40 windshield.",
+    "Emission and Area-light values may require exposure-preserving adjustment after the first retained Blender render.",
+    "The profile is intended for fault isolation rather than final paint or exterior presentation."
+  ],
+  "supersedes": null
+}
