@@ -41,7 +41,9 @@ A production environment is divided by physical and implementation ownership:
    spray, and deposition.
 7. **Surface state** — dry, dusty, damp, wet, ponded, icy, snowy, contaminated,
    or recently cleaned.
-8. **Camera and display** — exposure, white balance, lens, motion, flare,
+8. **Built context** — architecture, road furniture, vegetation, artificial
+   lights, and finite reflection structure.
+9. **Camera and display** — exposure, white balance, lens, motion, flare,
    colour management, and output transform.
 
 These layers may share data, but they must not silently own the same energy or
@@ -56,10 +58,18 @@ phenomenon twice.
 - [Roads and hardscape](ROADS_AND_HARDSCAPE.md)
 - [Terrain, soil, and dust](TERRAIN_SOIL_AND_DUST.md)
 - [Weather and hydrometeors](WEATHER_AND_HYDROMETEORS.md)
+- [Built environment and vegetation](BUILT_ENVIRONMENT_AND_VEGETATION.md)
+- [Camera, colour, and compositing boundaries](CAMERA_COLOR_AND_COMPOSITING.md)
 - [Blender 5.0.1 implementation cards](BLENDER_IMPLEMENTATION_CARDS.md)
 - [Validation and experiment backlog](VALIDATION_AND_EXPERIMENTS.md)
 - [Open questions and contradictions](OPEN_QUESTIONS_AND_CONTRADICTIONS.md)
 - [Source register](SOURCE_REGISTER.md)
+
+Machine-readable environment ownership is specified by
+[`environment-profile.schema.json`](../../lab/schemas/environment-profile.schema.json).
+The corresponding
+[fictional example profile](../../lab/examples/environment_profile.json) is
+executable documentation, not retained F40 evidence.
 
 ## Non-negotiable boundaries
 
