@@ -7,8 +7,11 @@ operator implementation belongs under `workflows/`; retained tests belong under
 
 ## Current projects
 
-- [DriveClub Ferrari F40 archaeology](driveclub_f40/STATUS.md) — active research
-  target; original resources not yet acquired by VirtualAuto.
+- [DriveClub Ferrari F40 archaeology](driveclub_f40/STATUS.md) — active research;
+  a sparse 1.28 overlay exposed a partial F40 resource catalogue, while the
+  matching base contribution and complete source semantics remain missing.
+  The [environment qualification plan](driveclub_f40/ENVIRONMENT_PLAN.md)
+  isolates the sourced export's windshield and paint before weather complexity.
 - [Pagani Huayra cinematic recreation](pagani_huayra/STATUS.md) — paused; retains
   unresolved geometry, material, and lighting observations.
 
