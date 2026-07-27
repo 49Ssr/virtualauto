@@ -69,12 +69,14 @@
 - camera metadata records Canon EOS 5D Mark IV and Canon EF prime-lens
   candidates, verified aperture-blade counts, and pinned Lensfun calibration
   rows; the Canon EF 85 mm f/1.4L IS USM profile now has a generated and checked
-  optional distortion/TCA/vignetting implementation, while PSF, sensor noise,
-  shutter, and camera response remain unapplied or unset;
+  distortion/TCA/vignetting implementation active for the current 85 mm camera,
+  while PSF, sensor noise, shutter, and camera response remain unapplied or
+  unset;
 - three 960 x 540 / 32-sample perspective renders, an 85 mm beauty A/B, four
-  calibration-pattern renders, and pre-suite/pre-lens checkpoints are retained
-  privately; the original 3840 x 2160 effective render configuration and
-  250-sample setting were restored after the comparisons.
+  calibration-pattern renders, a scene-linear 3840 x 2160 source, a full-size
+  lens A/B, and pre-suite/pre-lens checkpoints are retained privately; the
+  original 3840 x 2160 effective render configuration and 250-sample setting
+  were restored after the comparisons.
 
 The active research contract is documented in
 [Real camera and atmosphere pipeline](../../environment/REAL_CAMERA_AND_ATMOSPHERE_PIPELINE.md).
@@ -237,9 +239,18 @@ extracted assets remain absent from this checkout.
   convention requires red/green coordinates with a constant blue validity
   channel of one. The failure was retained as a diagnostic result rather than
   hidden by an arbitrary node substitution.
-- Passed neutral/profile grid, flat-field, hard-edge, and F40 beauty A/B checks;
-  retained the stage disabled by default because it is valid only for the
-  matching 85 mm camera and has not yet had a full-resolution sharpness audit.
+- Passed neutral/profile grid, flat-field, hard-edge, and F40 beauty A/B checks.
+- The first 3840 x 2160 gate exposed a compositor-domain failure: 960 x 540 map
+  inputs caused Map UV to produce a quarter-size result in a black full-size
+  canvas. Added explicit Render Size scaling for all coordinate and vignetting
+  maps, then passed the repeated full-resolution gate.
+- The corrected profile retained 97.98 percent of the neutral central strong-edge
+  gradient metric and 97.51 percent of mean display-referred luminance. These
+  are implementation diagnostics, not measured MTF or exposure claims.
+- Activated the qualified profile for the current 85 mm camera through
+  `LF85_09_CAMERA_SPECIFIC_MIX`. A proposed automatic camera-compatibility driver
+  was invalid in the live compositor and was removed; Factor 0 is the required
+  manual bypass before selecting the 35 or 50 mm cameras.
 - Recorded the user's current atmosphere-off state: the bounded mist experiment
   remains in the file but is excluded from viewport and render.
 - Recorded the first live Blender 5.2 F40 restoration state without committing

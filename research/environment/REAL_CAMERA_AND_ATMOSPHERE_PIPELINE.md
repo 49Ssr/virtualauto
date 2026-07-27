@@ -168,7 +168,8 @@ sensor size and lens aperture-blade counts support those fields. Lensfun commit
 `698a39eea69be00f4f25b6da6c1ad34b1f162b50` supplies candidate distortion and
 TCA profiles. The 35 and 50 mm profiles remain recorded but unapplied. The
 matching 85 mm profile now has a separate polynomial compositor implementation;
-it is bypassed by default and must not be reused for the other cameras.
+it is active for the selected 85 mm camera and must be manually bypassed before
+using either other camera.
 
 The 960 x 540 / 32-sample comparison renders produced the following visual
 observations:
@@ -223,9 +224,10 @@ PA vignetting interpolated at f/8 and 9.336846 m:
 
 Three packed 960 x 540 floating-point coordinate maps preserve channel-specific
 reverse distortion/TCA. A fourth packed map stores scene-linear vignetting
-transmission. The smooth fields are resampled by the compositor at the final
-operation domain; this is efficient, but still requires a final 3840 x 2160
-sharpness comparison before delivery qualification.
+transmission. Explicit Scale nodes expand those smooth fields to the compositor
+Render Size operation domain before Map UV or multiplication. This avoids
+storing several hundred megabytes of full-resolution maps while preserving the
+final output domain.
 
 Blender's Cycles UV pass convention stores U and V in red and green and a
 constant value of one in blue. Map UV treated the first generated maps, whose
@@ -241,12 +243,25 @@ The following private evidence now exists under
 - neutral and profile straight-grid renders;
 - a flat-field profile render;
 - a hard-edge profile render.
+- one denoised scene-linear 3840 x 2160 EXR used as the identical A/B input;
+- neutral and corrected-profile 3840 x 2160 outputs.
 
 Observed result: distortion and f/8 falloff are subtle but visible; the
 calibrated TCA is subpixel at the test resolution and was not amplified for
-effect. The branch remains off by default because it is camera-specific. This
-is an implemented and calibration-checked optional stage, not yet a production
-camera response or full optical simulation.
+effect. The first full-resolution attempt failed because Map UV inherited the
+960 x 540 coordinate-map domain, producing an inset result in a black canvas.
+After the maps were explicitly scaled to Render Size, both outputs were true
+3840 x 2160. The corrected profile retained 97.98 percent of the neutral
+central 95th-percentile gradient diagnostic and 97.51 percent of mean
+display-referred luminance. These figures are not optical MTF or transmission
+measurements.
+
+The branch is now active through `LF85_09_CAMERA_SPECIFIC_MIX` at Factor 1 for
+the current `VA_CAM_5D4_85_COMPRESSION`. Factor 0 is the required bypass before
+using another camera. An attempted automatic factor driver was rejected after
+Blender reported it invalid; no false automatic safety remains in the file.
+This is an implemented and calibration-checked image-space stage, not a camera
+response or full optical simulation.
 
 The active atmosphere prior is:
 
@@ -330,6 +345,7 @@ Blender text datablock `VA_REAL_LENS_CANDIDATE` but remains disabled.
 - [Blender Volumes](https://docs.blender.org/manual/en/5.0/render/materials/components/volume.html)
 - [Blender Render Passes](https://docs.blender.org/manual/en/5.0/render/layers/passes.html)
 - [Blender Map UV Node](https://docs.blender.org/manual/en/5.0/compositing/types/transform/map_uv.html)
+- [Blender Compositor System](https://docs.blender.org/manual/en/5.0/compositing/compositor_system.html)
 - [Blender Denoise Node](https://docs.blender.org/manual/en/5.0/compositing/types/filter/denoise.html)
 - [Lensfun manual](https://lensfun.github.io/manual/latest/)
 - [Lensfun calibration format](https://lensfun.github.io/manual/v0.3.1/elem_calibration.html)

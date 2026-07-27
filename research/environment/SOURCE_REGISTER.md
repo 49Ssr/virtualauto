@@ -92,6 +92,16 @@ it has been independently reproduced by VirtualAuto.
   UV-mapped objects; VirtualAuto's full-frame lens use is a tested repurposing,
   not an advertised camera-calibration feature.
 
+### SRC-ENV-BLENDER-COMPOSITOR-SYSTEM-5.0
+
+- Class: `BLENDER-DOC`
+- Source: [Blender 5.0 Manual — Compositor System](https://docs.blender.org/manual/en/5.0/compositing/compositor_system.html)
+- Use: image domains, operation domains, input-node identity domains, output
+  render-size domains, and the rule that many operations inherit one designated
+  input's domain.
+- Limitation: exact domain ownership of a repurposed multi-node calibration
+  graph still requires execution at every qualified delivery resolution.
+
 ## Camera and lens calibration references
 
 ### SRC-ENV-LENSFUN-MANUAL
