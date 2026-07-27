@@ -59,10 +59,17 @@
   is disconnected from beauty and labelled diagnostic-only;
 - the compositor order is noisy scene-linear radiance, guided denoise, neutral
   lens geometry/TCA, a disabled unmeasured PSF approximation, then output;
-- the 36 x 24 mm / 50 mm camera remains an ideal uncalibrated camera. A pinned
-  Lensfun Canon EF 50 mm f/1.8 STM profile is retained only as a disabled
-  candidate because Blender's one-factor Lens Distortion node cannot represent
-  the full calibration model.
+- the original 36 x 24 mm / 50 mm `Camera2` remains untouched and ideal;
+- a non-destructive 35/50/85 mm full-frame camera suite now shares one focus
+  target while changing camera distance with focal length; the 50 mm candidate
+  is the active balanced hero view;
+- camera metadata records Canon EOS 5D Mark IV and Canon EF prime-lens
+  candidates, verified aperture-blade counts, and pinned Lensfun calibration
+  rows, but distortion, TCA, vignetting, PSF, sensor noise, shutter, and camera
+  response remain unapplied or unset;
+- three 960 x 540 / 32-sample comparison renders and a pre-suite checkpoint are
+  retained privately; the original 3840 x 2160 effective render configuration
+  and 250-sample setting were restored after the comparison.
 
 The active research contract is documented in
 [Real camera and atmosphere pipeline](../../environment/REAL_CAMERA_AND_ATMOSPHERE_PIPELINE.md).
@@ -225,6 +232,9 @@ extracted assets remain absent from this checkout.
 - Preserved Mist Pass as a diagnostic rather than a lighting claim.
 - Added an explicitly neutral camera pipeline and a pinned, disabled Lensfun
   candidate instead of inventing lens distortion, TCA, vignetting, or PSF.
+- Added a non-destructive 35/50/85 mm full-frame perspective suite, retained the
+  original camera, and selected the 50 mm view as the active hero baseline after
+  controlled low-resolution comparison renders.
 - Retained atmosphere-off and atmosphere-on comparison renders outside Git.
 
 ### 2026-07-22

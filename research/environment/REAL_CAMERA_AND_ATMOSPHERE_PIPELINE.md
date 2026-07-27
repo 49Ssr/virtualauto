@@ -130,8 +130,7 @@ Noisy Image + Denoising Albedo/Normal -> Denoise
 -> final output
 ```
 
-The current camera is recorded as an ideal, uncalibrated full-frame 50 mm
-camera:
+The original `Camera2` remains an ideal, uncalibrated full-frame 50 mm camera:
 
 ```text
 sensor: 36 x 24 mm
@@ -141,6 +140,56 @@ TCA: neutral
 vignetting: unset
 PSF: unset
 ```
+
+## F40 perspective and camera suite
+
+`OBS-INSTRUMENT`, executed in Blender 5.2.0 LTS on 2026-07-27. The suite is
+private scene evidence, not a claim that Blender reproduces the complete optical
+behaviour of the named Canon lenses.
+
+The live F40 scene now contains three non-destructive perspective candidates
+derived from the original `Camera2` optical axis. Each aims at the same focus
+target, `VA_F40_Focus_Hero`, while camera distance changes approximately in
+proportion to focal length. This keeps subject scale broadly comparable and
+makes perspective change, rather than a simple crop, the principal variable.
+
+| Camera | Focal length | Target distance | Aperture | Blades | Intended role |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `VA_CAM_5D4_35_CONTEXT` | 35 mm | 3.85 m | f/8 | 8 | assertive environmental/context view |
+| `VA_CAM_5D4_50_HERO` | 50 mm | 5.50 m | f/8 | 7 | balanced front-quarter hero baseline |
+| `VA_CAM_5D4_85_COMPRESSION` | 85 mm | 9.35 m | f/8 | 9 | compressed design/catalogue view |
+
+All three use a 36 x 24 mm sensor gate, horizontal sensor fit, object-based
+focus, and enabled thin-lens depth of field. Their metadata records a Canon EOS
+5D Mark IV body and matching Canon EF prime-lens candidate. Canon's published
+sensor size and lens aperture-blade counts support those fields. Lensfun commit
+`698a39eea69be00f4f25b6da6c1ad34b1f162b50` supplies candidate distortion and
+TCA profiles. Those profiles are recorded but deliberately not applied: the
+stock Blender Lens Distortion node cannot reproduce the full polynomial
+calibration model.
+
+The 960 x 540 / 32-sample comparison renders produced the following visual
+observations:
+
+- 35 mm enlarges the near nose and front wheel, strengthens depth, and gives the
+  frame more advertising or action energy; it is least neutral for evaluating
+  body proportions.
+- 50 mm gives the most balanced hero framing and is the active scene camera.
+- 85 mm reduces near/far exaggeration and gives the cleanest design or catalogue
+  reading; it is useful as a geometry/material validation companion.
+
+The suite does **not** yet implement measured lens distortion, TCA, vignetting,
+PSF, sensor noise, shutter response, white balance, or a camera response
+function. Blender depth of field remains a thin-lens approximation. The current
+16:9 image is also a framing crop within the full-frame-width camera model, not
+the native 3:2 still-image aspect ratio of the referenced body.
+
+The scene retains:
+
+- `F40_MCP_pre_camera_suite.blend` as a checkpoint;
+- `VA_CAMERA_SUITE_MANIFEST` as an embedded text record;
+- the original `Camera2` without edits;
+- private A/B renders under `VA_Evidence/CameraSuite_v1`.
 
 The active atmosphere prior is:
 
@@ -227,4 +276,8 @@ Blender text datablock `VA_REAL_LENS_CANDIDATE` but remains disabled.
 - [Lensfun manual](https://lensfun.github.io/manual/latest/)
 - [Lensfun calibration format](https://lensfun.github.io/manual/v0.3.1/elem_calibration.html)
 - [PBRT Realistic Cameras](https://www.pbr-book.org/3ed-2018/Camera_Models/Realistic_Cameras)
-
+- [Canon EOS 5D Mark IV](https://www.usa.canon.com/shop/p/eos-5d-mark-iv)
+- [Canon EF 35mm f/2 IS USM](https://www.cla.canon.com/en/p/ef-35mm-f-2-is-usm)
+- [Canon EF 50mm f/1.8 STM](https://www.usa.canon.com/shop/p/ef-50mm-f-1-8-stm)
+- [Canon EF 85mm f/1.4L IS USM](https://www.cla.canon.com/en/p/ef-85mm-f-1-4l-is-usm)
+- [Lensfun Canon SLR calibration data](https://github.com/lensfun/lensfun/blob/698a39eea69be00f4f25b6da6c1ad34b1f162b50/data/db/slr-canon.xml)
