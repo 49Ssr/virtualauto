@@ -17,10 +17,12 @@ The domain is intentionally broad, but the build order is not.
 1. Read the [practicality audit](PRACTICALITY_AUDIT.md).
 2. Use the [production ladder](PRODUCTION_LADDER.md) to decide what belongs in the
    current scene.
-3. For the sourced F40 windshield issue, follow the
+3. Use the [experiment priority](EXPERIMENT_PRIORITY.md) rather than treating the
+   complete backlog as an active queue.
+4. For the sourced F40 windshield issue, follow the
    [glass diagnostic quickstart](../../workflows/environment/F40_GLASS_QUICKSTART.md)
    before adding an HDRI, atmosphere, weather, droplets, or post effects.
-4. Use the source-backed chapters only when the active production level reaches
+5. Use the source-backed chapters only when the active production level reaches
    them.
 
 The current priority order is:
@@ -97,8 +99,9 @@ phenomenon twice.
 
 - [Practicality audit](PRACTICALITY_AUDIT.md)
 - [Production ladder](PRODUCTION_LADDER.md)
+- [Experiment priority](EXPERIMENT_PRIORITY.md)
 - [Blender 5.0.1 implementation cards](BLENDER_IMPLEMENTATION_CARDS.md)
-- [Validation and experiment backlog](VALIDATION_AND_EXPERIMENTS.md)
+- [Validation and complete experiment backlog](VALIDATION_AND_EXPERIMENTS.md)
 
 ### Source-backed reference
 
