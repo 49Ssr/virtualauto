@@ -1,0 +1,50 @@
+{
+  "$schema": "../../schemas/experiment.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EXP-VA-BLENDER-MCP-001",
+  "title": "Official Blender MCP live-control transport smoke test",
+  "domain": "Blender live-control infrastructure",
+  "status": "accepted",
+  "question": "Can the pinned official MCP release carry a structured read-only request from a stdio client into Blender 5.2 and return the result?",
+  "hypothesis": "The pinned add-on and server can provide a reproducible live-control transport while remaining separately installed from VirtualAuto's portable CLI.",
+  "source_ids": [],
+  "assumptions": [
+    "An empty background Blender process is sufficient to validate transport, not an automotive workflow.",
+    "A successful request does not validate the upstream weak sandbox as a security boundary."
+  ],
+  "blender_versions": [
+    "5.2.0 LTS fbe6228777e7"
+  ],
+  "render_engines": [
+    "EEVEE"
+  ],
+  "controlled_variables": {
+    "source_data": "factory startup scene",
+    "bridge_host": "127.0.0.1",
+    "bridge_port": 9876,
+    "upstream_tag": "v1.0.0"
+  },
+  "procedure": [
+    "Install the checksum-verified v1.0.0 Blender extension and matching server from the pinned tag.",
+    "Start Blender 5.2.0 LTS in background online mode with the blender_mcp command.",
+    "Perform a raw read-only socket handshake and record the returned scene metadata.",
+    "Launch the official stdio MCP server through the Python SDK client, enumerate tools, and call get_blendfile_summary_path_info.",
+    "Stop the temporary background Blender process after the response is retained."
+  ],
+  "acceptance_criteria": [
+    "The socket probe returns Blender 5.2.0 LTS and a successful structured result.",
+    "The stdio MCP client enumerates tools and returns path information without an MCP error.",
+    "No saved automotive source asset is opened or modified."
+  ],
+  "failure_criteria": [
+    "The connector cannot bind on loopback or the stdio server cannot initialize.",
+    "The request mutates or saves a Blender file.",
+    "The server response is missing, malformed, or reports an error."
+  ],
+  "required_evidence_types": [
+    "log"
+  ],
+  "result": "Accepted for transport infrastructure. The raw probe and the full stdio MCP call both returned structured success responses from Blender 5.2.0 LTS.",
+  "decision": "accept",
+  "supersedes": []
+}

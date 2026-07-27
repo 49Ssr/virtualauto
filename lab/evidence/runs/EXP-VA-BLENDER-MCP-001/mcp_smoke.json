@@ -1,0 +1,24 @@
+{
+  "captured_at": "2026-07-27T12:59:35Z",
+  "upstream_tag": "v1.0.0",
+  "upstream_commit": "03004fd0216bfe5e0a3d9ac9b47d5efadc3d78c4",
+  "blender": {
+    "version": "5.2.0 LTS",
+    "build_hash": "fbe6228777e7",
+    "source_file": null,
+    "is_dirty": false,
+    "scene": "Scene",
+    "object_count": 3,
+    "material_count": 2,
+    "image_count": 2,
+    "render_engine": "BLENDER_EEVEE"
+  },
+  "mcp": {
+    "tool_count": 26,
+    "path_info_call": "get_blendfile_summary_path_info",
+    "path_info_status": "ok",
+    "is_saved": false,
+    "is_dirty": false
+  },
+  "scope": "Empty temporary background process; no automotive asset was opened or modified."
+}

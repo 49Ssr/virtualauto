@@ -22,12 +22,18 @@ The full ownership rules are documented in the
 
 ## Current baseline
 
-- Blender baseline: `5.0.1`
+- Reproduced headless baseline: Blender `5.0.1`
+- Interactive live-control target: Blender `5.2.0 LTS`
 - First archaeology target: DriveClub Ferrari F40
 - Pinned operational extractor: DriveClubFS
 - Repository state: guarded extraction, deterministic research retrieval, a
   Blender asset-audit panel, and the first accepted coordinate-math invariant;
   no claim of completed DriveClub model conversion or production material
+
+Live Blender control is documented in the
+[MCP runbook](workflows/blender/mcp/README.md). Its official upstream connector
+is pinned and installed separately; the repository does not pretend its weak
+execution sandbox is a security boundary.
 
 The exact Automotive Body R&D v5 master is preserved at
 [Automotive_Body_RnD_Master.md](research/automotive_materials/Automotive_Body_RnD_Master.md).

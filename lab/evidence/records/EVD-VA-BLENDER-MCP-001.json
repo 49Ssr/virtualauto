@@ -1,0 +1,21 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schema_version": "1.1.0",
+  "id": "EVD-VA-BLENDER-MCP-001",
+  "experiment_id": "EXP-VA-BLENDER-MCP-001",
+  "artifact_type": "log",
+  "repository_path": "lab/evidence/runs/EXP-VA-BLENDER-MCP-001/mcp_smoke.json",
+  "external_reference": null,
+  "sha256": "b058392aa414fca9b2986f07157d675330c1fda23f473ca7c539d01b3309702e",
+  "byte_size": 660,
+  "provenance": "Captured from a checksum-pinned Blender MCP v1.0.0 transport smoke test against an empty Blender 5.2.0 LTS background process.",
+  "recorded_at": "2026-07-27T12:59:35Z",
+  "blender_version": "5.2.0 LTS fbe6228777e7",
+  "render_engine": "EEVEE",
+  "scene_revision": "factory-startup-unsaved",
+  "observation_ids": [
+    "OBS-VA-BLENDER-MCP-001"
+  ],
+  "rights_status": "original",
+  "retention_note": "Transport metadata only; this does not validate an automotive asset, a node implementation, or unrestricted mutation safety."
+}
