@@ -72,6 +72,26 @@ it has been independently reproduced by VirtualAuto.
 - Limitation: the node accepts parameters; it does not establish that a chosen
   atmosphere profile was measured or fitted.
 
+### SRC-ENV-BLENDER-RENDER-PASSES-5.0
+
+- Class: `BLENDER-DOC`
+- Source: [Blender 5.0 Manual — Render Passes](https://docs.blender.org/manual/en/5.0/render/layers/passes.html)
+- Use: Cycles UV-pass channel convention: U in red, V in green, and a constant
+  value of one in blue.
+- Limitation: this documents the render-pass representation; a generated
+  compositor coordinate map still requires its own operation-domain and
+  resampling tests.
+
+### SRC-ENV-BLENDER-MAP-UV-5.0
+
+- Class: `BLENDER-DOC`
+- Source: [Blender 5.0 Manual — Map UV Node](https://docs.blender.org/manual/en/5.0/compositing/types/transform/map_uv.html)
+- Use: compositor texture remapping from a UV coordinate pass and supported
+  filter behaviour.
+- Limitation: Map UV is documented primarily for applying textures to rendered
+  UV-mapped objects; VirtualAuto's full-frame lens use is a tested repurposing,
+  not an advertised camera-calibration feature.
+
 ## Camera and lens calibration references
 
 ### SRC-ENV-LENSFUN-MANUAL
@@ -91,6 +111,16 @@ it has been independently reproduced by VirtualAuto.
   fields used by Lensfun profiles.
 - Limitation: coefficients must be evaluated with the matching Lensfun model;
   they are not Blender Lens Distortion values.
+
+### SRC-ENV-LENSFUN-SOURCE-698A39
+
+- Class: `PRIMARY-IMPLEMENTATION`
+- Source: [Lensfun source at pinned commit](https://github.com/lensfun/lensfun/tree/698a39eea69be00f4f25b6da6c1ad34b1f162b50)
+- Use: coordinate normalization, reverse PTLens solving, reverse poly3 TCA,
+  PA vignetting evaluation, callback order, and aperture/distance interpolation
+  behaviour used by the 85 mm compositor implementation.
+- Limitation: VirtualAuto reproduced the relevant equations in generated maps;
+  it did not link the Lensfun binary into Blender.
 
 ### SRC-ENV-PBRT-REALISTIC-CAMERA
 

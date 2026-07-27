@@ -49,7 +49,9 @@
   in the private project directory;
 - the active World uses its Sky Texture through an explicit Background closure,
   with a 0.533-degree solar angular diameter and no second Sun-light owner;
-- a closed 120 x 120 x 42 m Cycles volume now owns local mist transport;
+- a closed 120 x 120 x 42 m Cycles volume remains available as a local-mist
+  experiment, but the user has excluded it from viewport and render; the
+  current camera/compositor work is therefore atmosphere-off;
 - ground visibility is an explicit 1500 m implementation prior, producing an
   extinction coefficient of 0.002608 1/m, split into scattering and absorption
   by a 0.95 single-scatter-albedo prior;
@@ -57,19 +59,22 @@
   12 um particle-diameter prior, and vertical density falloff;
 - Mist, Z, Environment, Normal, and denoising-data passes are enabled, but Mist
   is disconnected from beauty and labelled diagnostic-only;
-- the compositor order is noisy scene-linear radiance, guided denoise, neutral
-  lens geometry/TCA, a disabled unmeasured PSF approximation, then output;
+- the compositor order is noisy scene-linear radiance, guided denoise, an
+  optional calibrated 85 mm distortion/TCA/vignetting stage, neutral fallback,
+  a disabled unmeasured PSF approximation, then output;
 - the original 36 x 24 mm / 50 mm `Camera2` remains untouched and ideal;
 - a non-destructive 35/50/85 mm full-frame camera suite now shares one focus
-  target while changing camera distance with focal length; the 50 mm candidate
-  is the active balanced hero view;
+  target while changing camera distance with focal length; the user selected
+  the 85 mm compressed view as the current active camera;
 - camera metadata records Canon EOS 5D Mark IV and Canon EF prime-lens
   candidates, verified aperture-blade counts, and pinned Lensfun calibration
-  rows, but distortion, TCA, vignetting, PSF, sensor noise, shutter, and camera
-  response remain unapplied or unset;
-- three 960 x 540 / 32-sample comparison renders and a pre-suite checkpoint are
-  retained privately; the original 3840 x 2160 effective render configuration
-  and 250-sample setting were restored after the comparison.
+  rows; the Canon EF 85 mm f/1.4L IS USM profile now has a generated and checked
+  optional distortion/TCA/vignetting implementation, while PSF, sensor noise,
+  shutter, and camera response remain unapplied or unset;
+- three 960 x 540 / 32-sample perspective renders, an 85 mm beauty A/B, four
+  calibration-pattern renders, and pre-suite/pre-lens checkpoints are retained
+  privately; the original 3840 x 2160 effective render configuration and
+  250-sample setting were restored after the comparisons.
 
 The active research contract is documented in
 [Real camera and atmosphere pipeline](../../environment/REAL_CAMERA_AND_ATMOSPHERE_PIPELINE.md).
@@ -225,6 +230,18 @@ extracted assets remain absent from this checkout.
 
 ### 2026-07-27
 
+- Implemented the pinned Lensfun Canon EF 85 mm f/1.4L IS USM PTLens
+  distortion, poly3 TCA, and aperture/distance-interpolated PA vignetting as a
+  packed, bypassable compositor stage.
+- Found and corrected an initially black Map UV result: Blender's Cycles UV-pass
+  convention requires red/green coordinates with a constant blue validity
+  channel of one. The failure was retained as a diagnostic result rather than
+  hidden by an arbitrary node substitution.
+- Passed neutral/profile grid, flat-field, hard-edge, and F40 beauty A/B checks;
+  retained the stage disabled by default because it is valid only for the
+  matching 85 mm camera and has not yet had a full-resolution sharpness audit.
+- Recorded the user's current atmosphere-off state: the bounded mist experiment
+  remains in the file but is excluded from viewport and render.
 - Recorded the first live Blender 5.2 F40 restoration state without committing
   private game-derived assets or the `.blend` file.
 - Replaced compositor-only atmosphere intent with a bounded, coefficient-driven

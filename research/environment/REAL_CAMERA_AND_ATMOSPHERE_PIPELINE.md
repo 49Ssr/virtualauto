@@ -123,14 +123,16 @@ The active `F40_MCP.blend` implementation created on 2026-07-27 uses:
 
 ```text
 World Sky Texture -> Background -> World Output Surface
-VA_ENV_BoundedMist -> Material Output Volume
+VA_ENV_BoundedMist -> Material Output Volume (currently excluded from viewport/render)
 Noisy Image + Denoising Albedo/Normal -> Denoise
--> neutral Lens Distortion
+-> optional calibrated 85 mm distortion/TCA/vignetting
+-> neutral Lens Distortion fallback
 -> disabled unmeasured PSF approximation
 -> final output
 ```
 
-The original `Camera2` remains an ideal, uncalibrated full-frame 50 mm camera:
+The original `Camera2` remains an untouched ideal, uncalibrated full-frame
+50 mm camera:
 
 ```text
 sensor: 36 x 24 mm
@@ -164,9 +166,9 @@ focus, and enabled thin-lens depth of field. Their metadata records a Canon EOS
 5D Mark IV body and matching Canon EF prime-lens candidate. Canon's published
 sensor size and lens aperture-blade counts support those fields. Lensfun commit
 `698a39eea69be00f4f25b6da6c1ad34b1f162b50` supplies candidate distortion and
-TCA profiles. Those profiles are recorded but deliberately not applied: the
-stock Blender Lens Distortion node cannot reproduce the full polynomial
-calibration model.
+TCA profiles. The 35 and 50 mm profiles remain recorded but unapplied. The
+matching 85 mm profile now has a separate polynomial compositor implementation;
+it is bypassed by default and must not be reused for the other cameras.
 
 The 960 x 540 / 32-sample comparison renders produced the following visual
 observations:
@@ -174,15 +176,17 @@ observations:
 - 35 mm enlarges the near nose and front wheel, strengthens depth, and gives the
   frame more advertising or action energy; it is least neutral for evaluating
   body proportions.
-- 50 mm gives the most balanced hero framing and is the active scene camera.
+- 50 mm gives the most balanced hero framing; it was the initial suite baseline.
 - 85 mm reduces near/far exaggeration and gives the cleanest design or catalogue
-  reading; it is useful as a geometry/material validation companion.
+  reading; the user subsequently selected it as the active scene camera.
 
-The suite does **not** yet implement measured lens distortion, TCA, vignetting,
-PSF, sensor noise, shutter response, white balance, or a camera response
-function. Blender depth of field remains a thin-lens approximation. The current
-16:9 image is also a framing crop within the full-frame-width camera model, not
-the native 3:2 still-image aspect ratio of the referenced body.
+The suite does **not** pretend that one profile fits every camera. Only the 85 mm
+candidate has an implemented distortion/TCA/vignetting stage. No measured PSF,
+sensor noise, shutter response, white balance, or camera response function is
+yet active. Blender depth of field remains a thin-lens approximation. The
+current 16:9 image is also a centred framing crop within the full-frame-width
+camera model, not the native 3:2 still-image aspect ratio of the referenced
+body.
 
 The scene retains:
 
@@ -190,6 +194,59 @@ The scene retains:
 - `VA_CAMERA_SUITE_MANIFEST` as an embedded text record;
 - the original `Camera2` without edits;
 - private A/B renders under `VA_Evidence/CameraSuite_v1`.
+
+## Implemented 85 mm Lensfun stage
+
+`OBS-INSTRUMENT`, executed in Blender 5.2.0 LTS on 2026-07-27.
+
+The optional stage targets only `VA_CAM_5D4_85_COMPRESSION` and the Lensfun
+entry for Canon EF 85 mm f/1.4L IS USM at pinned commit
+`698a39eea69be00f4f25b6da6c1ad34b1f162b50`. It reproduces the registered
+Lensfun model classes rather than translating them into Blender's unrelated
+single Distortion and Dispersion sliders:
+
+```text
+PTLens distortion at 85 mm:
+  a = 0.00984
+  b = -0.0325
+  c = 0.0316
+
+poly3 TCA at 85 mm:
+  vr = 0.9999438
+  vb = 0.9999330
+
+PA vignetting interpolated at f/8 and 9.336846 m:
+  k1 = -0.1757052864
+  k2 = -0.0263920790
+  k3 = 0.0396991339
+```
+
+Three packed 960 x 540 floating-point coordinate maps preserve channel-specific
+reverse distortion/TCA. A fourth packed map stores scene-linear vignetting
+transmission. The smooth fields are resampled by the compositor at the final
+operation domain; this is efficient, but still requires a final 3840 x 2160
+sharpness comparison before delivery qualification.
+
+Blender's Cycles UV pass convention stores U and V in red and green and a
+constant value of one in blue. Map UV treated the first generated maps, whose
+blue channel was zero, as invalid and returned black. Correcting blue to one
+restored the remap. This failure is useful node-behaviour evidence: an RGB image
+that visually contains valid U/V values is not automatically a valid Map UV
+field.
+
+The following private evidence now exists under
+`VA_Evidence/CameraPipeline_v2`:
+
+- neutral and measured-profile F40 beauty A/B at 960 x 540 / 32 samples;
+- neutral and profile straight-grid renders;
+- a flat-field profile render;
+- a hard-edge profile render.
+
+Observed result: distortion and f/8 falloff are subtle but visible; the
+calibrated TCA is subpixel at the test resolution and was not amplified for
+effect. The branch remains off by default because it is camera-specific. This
+is an implemented and calibration-checked optional stage, not yet a production
+camera response or full optical simulation.
 
 The active atmosphere prior is:
 
@@ -272,6 +329,7 @@ Blender text datablock `VA_REAL_LENS_CANDIDATE` but remains disabled.
 - [Blender Volume Coefficients](https://docs.blender.org/manual/en/5.0/render/shader_nodes/shader/volume_coefficients.html)
 - [Blender Volumes](https://docs.blender.org/manual/en/5.0/render/materials/components/volume.html)
 - [Blender Render Passes](https://docs.blender.org/manual/en/5.0/render/layers/passes.html)
+- [Blender Map UV Node](https://docs.blender.org/manual/en/5.0/compositing/types/transform/map_uv.html)
 - [Blender Denoise Node](https://docs.blender.org/manual/en/5.0/compositing/types/filter/denoise.html)
 - [Lensfun manual](https://lensfun.github.io/manual/latest/)
 - [Lensfun calibration format](https://lensfun.github.io/manual/v0.3.1/elem_calibration.html)
@@ -281,3 +339,4 @@ Blender text datablock `VA_REAL_LENS_CANDIDATE` but remains disabled.
 - [Canon EF 50mm f/1.8 STM](https://www.usa.canon.com/shop/p/ef-50mm-f-1-8-stm)
 - [Canon EF 85mm f/1.4L IS USM](https://www.cla.canon.com/en/p/ef-85mm-f-1-4l-is-usm)
 - [Lensfun Canon SLR calibration data](https://github.com/lensfun/lensfun/blob/698a39eea69be00f4f25b6da6c1ad34b1f162b50/data/db/slr-canon.xml)
+- [Lensfun source at the audited commit](https://github.com/lensfun/lensfun/tree/698a39eea69be00f4f25b6da6c1ad34b1f162b50)
