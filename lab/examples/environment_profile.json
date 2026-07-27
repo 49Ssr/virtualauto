@@ -1,0 +1,198 @@
+{
+  "$schema": "../schemas/environment-profile.schema.json",
+  "schema_version": "1.0.0",
+  "id": "ENV-EXAMPLE-F40-GLASS-DIAGNOSTIC",
+  "name": "Fictional F40 glass diagnostic corridor",
+  "status": "P1-specified",
+  "blender_version": "5.0.1",
+  "render_engine": "Cycles",
+  "purpose": "Exercise the environment profile contract with a restrained asymmetric exterior corridor; this is executable documentation, not retained F40 evidence.",
+  "source_ids": [
+    "SRC-ENV-BLENDER-SKY-5.0",
+    "SRC-ENV-BLENDER-VOLUME-5.0"
+  ],
+  "ownership": [
+    "Nishita World owns far-field clear-sky radiance",
+    "a separate Sun light is planned to own direct shadows after calibration",
+    "finite wall and vegetation proxies own near-field reflection bands",
+    "a bounded volume owns optional local haze",
+    "the road owns lower-hemisphere geometry and visible ground"
+  ],
+  "world": {
+    "mode": "Nishita",
+    "visible_to_camera": true,
+    "lighting_owner": "far-field sky only; direct solar ownership remains unresolved until contribution testing",
+    "asset_id": null,
+    "parameters": {
+      "sun_elevation": {
+        "value": null,
+        "unit": "degrees",
+        "status": "unresolved",
+        "source_ids": [],
+        "notes": "Choose only after the windshield defect is isolated under neutral broad lighting."
+      },
+      "air": {
+        "value": null,
+        "unit": "Blender Nishita parameter",
+        "status": "unresolved",
+        "source_ids": ["SRC-ENV-BLENDER-SKY-5.0"],
+        "notes": "Not mapped to pressure or molecular density."
+      },
+      "dust": {
+        "value": null,
+        "unit": "Blender Nishita parameter",
+        "status": "unresolved",
+        "source_ids": ["SRC-ENV-BLENDER-SKY-5.0"],
+        "notes": "Not mapped to aerosol optical depth or PM concentration."
+      },
+      "ozone": {
+        "value": null,
+        "unit": "Blender Nishita parameter",
+        "status": "unresolved",
+        "source_ids": ["SRC-ENV-BLENDER-SKY-5.0"],
+        "notes": "Not mapped to Dobson units or a vertical ozone profile."
+      }
+    }
+  },
+  "direct_lighting": {
+    "sun_owner": "deliberately-split",
+    "parameters": {
+      "direction": {
+        "value": null,
+        "unit": "world-space direction",
+        "status": "unresolved",
+        "source_ids": [],
+        "notes": "Must match the analytic sky exactly."
+      },
+      "angular_size": {
+        "value": null,
+        "unit": "degrees",
+        "status": "unresolved",
+        "source_ids": [],
+        "notes": "Match visible disc and shadow softness deliberately."
+      },
+      "energy": {
+        "value": null,
+        "unit": "Blender Sun light energy",
+        "status": "unresolved",
+        "source_ids": [],
+        "notes": "No artist default accepted before world/direct contribution renders."
+      }
+    },
+    "other_emitters": []
+  },
+  "atmosphere": {
+    "representation": "bounded-volume",
+    "bounded": true,
+    "parameters": {
+      "density": {
+        "value": null,
+        "unit": "Blender volume density over a recorded metric bound",
+        "status": "unresolved",
+        "source_ids": ["SRC-ENV-BLENDER-VOLUME-5.0"],
+        "notes": "Default diagnostic state is disabled; any haze must retain a no-volume reference."
+      },
+      "anisotropy": {
+        "value": null,
+        "unit": "dimensionless renderer parameter",
+        "status": "unresolved",
+        "source_ids": [],
+        "notes": "Not interpreted as particle size."
+      }
+    },
+    "visibility_targets": [
+      {
+        "distance_m": 100,
+        "target": "black and white contrast target remains distinguishable",
+        "status": "specified"
+      }
+    ]
+  },
+  "ground": {
+    "construction_class": "metric dry asphalt diagnostic tile",
+    "surface_state": "dry",
+    "world_scale_m": 200,
+    "parameters": {
+      "road_crown": {
+        "value": null,
+        "unit": "metres per metre crossfall or explicit profile",
+        "status": "unresolved",
+        "source_ids": [],
+        "notes": "Must support drainage logic even though this initial profile is dry."
+      },
+      "aggregate_scale": {
+        "value": null,
+        "unit": "metres",
+        "status": "unresolved",
+        "source_ids": ["SRC-ENV-FHWA-TEXTURE"],
+        "notes": "Micro-, macro-, and megatexture ownership remain separated."
+      }
+    }
+  },
+  "weather": {
+    "type": "clear dry diagnostic state",
+    "cloud_state": {
+      "value": "none in initial diagnostic",
+      "unit": "categorical",
+      "status": "artist-default",
+      "source_ids": [],
+      "notes": "Clouds are excluded to avoid moving reflection confounders."
+    },
+    "precipitation": {
+      "value": "none",
+      "unit": "categorical",
+      "status": "artist-default",
+      "source_ids": [],
+      "notes": "Wet-weather variants belong to separate profiles."
+    },
+    "wind": {
+      "value": [0, 0, 0],
+      "unit": "metres per second in world axes",
+      "status": "artist-default",
+      "source_ids": [],
+      "notes": "No particle or vegetation motion in the static defect-isolation profile."
+    },
+    "recent_history": "Assumed dry and clean for the fictional diagnostic example; no physical weather history is claimed."
+  },
+  "camera": {
+    "exposure": {
+      "value": null,
+      "unit": "EV offset or explicit camera exposure record",
+      "status": "unresolved",
+      "source_ids": [],
+      "notes": "Fix after the grey-card and sky exposure bracket."
+    },
+    "white_balance": {
+      "value": null,
+      "unit": "documented chromatic-adaptation setting",
+      "status": "unresolved",
+      "source_ids": [],
+      "notes": "Must remain fixed across windshield comparison variants."
+    },
+    "display_transform": "record exact Blender colour-management configuration before execution",
+    "lens": {
+      "value": null,
+      "unit": "millimetres plus sensor/camera pose record",
+      "status": "unresolved",
+      "source_ids": [],
+      "notes": "Use at least one deep-focus diagnostic view."
+    },
+    "post_effects": []
+  },
+  "diagnostics": [
+    "plain opaque grey windshield material",
+    "specular-only windshield material",
+    "transmission reintroduced after geometry and normal isolation",
+    "world-only direct-only and combined lighting",
+    "geometric normals and imported custom loop normals",
+    "chrome sphere grey card black-gloss panel and clear-glass proxy",
+    "camera orbit to test whether triangular patches remain locked to topology"
+  ],
+  "limitations": [
+    "No values in this example were measured or executed in Blender.",
+    "The profile does not diagnose the user's actual F40 export.",
+    "The finite wall vegetation and road geometry are specified only by role.",
+    "The deliberately split sun remains unresolved and must not be built from guessed energy values."
+  ],
+  "supersedes": null
+}
