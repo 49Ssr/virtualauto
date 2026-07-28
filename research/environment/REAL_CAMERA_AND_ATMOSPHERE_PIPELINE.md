@@ -127,7 +127,8 @@ VA_ENV_BoundedMist -> Material Output Volume (currently excluded from viewport/r
 Noisy Image + Denoising Albedo/Normal -> Denoise
 -> optional calibrated 85 mm distortion/TCA/vignetting
 -> neutral Lens Distortion fallback
--> disabled unmeasured PSF approximation
+-> qualified ideal f/8 diffraction kernel at 3840 x 2160
+-> disabled unmeasured Fog Glow approximation
 -> final output
 ```
 
@@ -182,9 +183,11 @@ observations:
   reading; the user subsequently selected it as the active scene camera.
 
 The suite does **not** pretend that one profile fits every camera. Only the 85 mm
-candidate has an implemented distortion/TCA/vignetting stage. No measured PSF,
-sensor noise, shutter response, white balance, or camera response function is
-yet active. Blender depth of field remains a thin-lens approximation. The
+candidate has an implemented distortion/TCA/vignetting stage. One ideal
+circular-aperture diffraction component is active for f/8 at 3840 x 2160, but
+no measured Canon lens PSF, sensor MTF, sensor noise, shutter response, white
+balance, or camera response function is active. Blender depth of field remains
+a thin-lens approximation. The
 current 16:9 image is also a centred framing crop within the full-frame-width
 camera model, not the native 3:2 still-image aspect ratio of the referenced
 body.
@@ -196,7 +199,7 @@ The scene retains:
 - the original `Camera2` without edits;
 - private A/B renders under `VA_Evidence/CameraSuite_v1`.
 
-## Implemented 85 mm Lensfun stage
+## Qualified source-exact 85 mm Lensfun stage
 
 `OBS-INSTRUMENT`, executed in Blender 5.2.0 LTS on 2026-07-27.
 
@@ -222,6 +225,31 @@ PA vignetting interpolated at f/8 and 9.336846 m:
   k3 = 0.0396991339
 ```
 
+Those are database parameters, not the final PTLens coefficients used by
+Lensfun's modifier. Source audit of `modifier.cpp`, `mod-coord.cpp`,
+`mod-subpix.cpp`, and `mod-color.cpp` at the pinned commit showed that Lensfun
+first applies its coordinate normalization and focal-preserving coefficient
+rescaling. For this profile, the rescaled PTLens coefficients are:
+
+```text
+a' =  3.6250027919958545
+b' = -1.6751699595215340
+c' =  0.22788978898810133
+```
+
+The first VirtualAuto map set incorrectly applied the database `a/b/c` values
+directly. It passed visual calibration because the 85 mm effect is subtle, but
+it was not source-exact. That V1 map set remains packed and marked superseded.
+V2 then regenerated every map from a small `bpy`-free Python model of the
+pinned equations, but its Blender adapter encoded pixel positions as
+`x/(width-1)` and `y/(height-1)`. A dedicated Map UV identity test showed that
+Blender 5.2 instead requires `(x+0.5)/width` and `(y+0.5)/height`: the former
+convention produced 17.21 dB PSNR on the permanent 64 x 32 stress pattern,
+while the pixel-centre convention reproduced the source exactly. V3 combines
+the source-pinned Lensfun equations with that verified Blender convention and
+freezes all four float32 pixel hashes in the camera contract. Both earlier
+implementations remain packed and marked superseded.
+
 Three packed 960 x 540 floating-point coordinate maps preserve channel-specific
 reverse distortion/TCA. A fourth packed map stores scene-linear vignetting
 transmission. Explicit Scale nodes expand those smooth fields to the compositor
@@ -236,25 +264,33 @@ restored the remap. This failure is useful node-behaviour evidence: an RGB image
 that visually contains valid U/V values is not automatically a valid Map UV
 field.
 
-The following private evidence now exists under
-`VA_Evidence/CameraPipeline_v2`:
+Historical V1 evidence remains under `VA_Evidence/CameraPipeline_v2`, and V2
+under `CameraPipeline_v4`. The qualified V3 evidence is under
+`VA_Evidence/CameraPipeline_v5` and
+contains:
 
-- neutral and measured-profile F40 beauty A/B at 960 x 540 / 32 samples;
-- neutral and profile straight-grid renders;
-- a flat-field profile render;
-- a hard-edge profile render.
-- one denoised scene-linear 3840 x 2160 EXR used as the identical A/B input;
-- neutral and corrected-profile 3840 x 2160 outputs.
+- the same denoised scene-linear 3840 x 2160 EXR used by the V1 gate;
+- V3 profile outputs with ideal diffraction bypassed and active;
+- neutral and V3 straight-grid renders;
+- a V3 flat-field render;
+- centred and off-axis V3 hard-edge renders;
+- numerical beauty and calibration reports.
 
 Observed result: distortion and f/8 falloff are subtle but visible; the
-calibrated TCA is subpixel at the test resolution and was not amplified for
-effect. The first full-resolution attempt failed because Map UV inherited the
-960 x 540 coordinate-map domain, producing an inset result in a black canvas.
-After the maps were explicitly scaled to Render Size, both outputs were true
-3840 x 2160. The corrected profile retained 97.98 percent of the neutral
-central 95th-percentile gradient diagnostic and 97.51 percent of mean
-display-referred luminance. These figures are not optical MTF or transmission
-measurements.
+calibrated TCA remains subpixel and was not amplified for effect. Relative to
+V2, the corrected V3 beauty has a 34.59 dB PSNR, retains 86.80 percent of V2's
+strong-edge gradient metric, and has a mean-luminance ratio of 0.99901. This is
+not a new optical blur: it exposes the several-pixel edge-domain resampling
+error that V2 introduced after its 960 x 540 map was expanded to 4K. On a 0.5
+scene-linear flat field, V3 measured 0.50001 at centre and 0.41920 one pixel
+inside each corner, a corner/centre ratio of 0.83839 consistent with the packed
+map's 0.83787 extreme-corner sample plus interpolation. These are compositor
+validation values, not optical MTF or physical transmission measurements.
+
+The earlier full-resolution domain failure remains relevant: Map UV inherited
+the 960 x 540 coordinate-map domain and produced an inset result in a black
+canvas until explicit Render Size scaling was added. V3 retains that proven
+domain adaptation.
 
 The branch is now active through `LF85_09_CAMERA_SPECIFIC_MIX` at Factor 1 for
 the current `VA_CAM_5D4_85_COMPRESSION`. Factor 0 is the required bypass before
@@ -262,6 +298,68 @@ using another camera. An attempted automatic factor driver was rejected after
 Blender reported it invalid; no false automatic safety remains in the file.
 This is an implemented and calibration-checked image-space stage, not a camera
 response or full optical simulation.
+
+## Qualified ideal f/8 diffraction stage
+
+`OBS-INSTRUMENT`, executed in Blender 5.2.0 LTS on 2026-07-28.
+
+The active 85 mm camera uses f/8 and an effective 3840 x 2160 output. For an
+ideal circular aperture at the 550 nm reference wavelength, the first-zero Airy
+diameter is:
+
+```text
+2.44 * wavelength * f-number = 10.736 micrometres
+```
+
+At a 36 mm-wide 3840-pixel output, one output pixel spans 9.375 micrometres on
+the modeled sensor gate, so that diameter is approximately 1.145 output pixels.
+A pixel-integrated 9 x 9 intensity kernel was generated and packed as
+`VA_IDEAL_AIRY_F8_550NM_4K_9X9`. The finite kernel contains approximately
+98.095 percent of the infinite ideal Airy energy before Blender's Convolve node
+normalizes it to one. It is inserted after the qualified Lensfun geometry/TCA/
+vignetting stage and before output.
+
+This is **not** a measured Canon EF 85 mm f/1.4L IS USM PSF. It models only the
+ideal circular-aperture diffraction component. The real lens has nine aperture
+blades, but no official f/8 pupil shape, field-dependent PSF, optical
+prescription, or measured f/8 MTF was found. Canon's published MTF explanation
+states that its current lens MTF charts are measured wide open, so those charts
+cannot be repurposed as an f/8 convolution kernel. The EOS 5D Mark IV is
+documented as having an optical low-pass filter, but its transfer function,
+CFA/demosaic response, and capture sharpening are unknown and therefore remain
+unset.
+
+Two gates were passed:
+
+1. A 64 x 64 synthetic impulse recovered all 81 kernel coefficients and total
+   normalized energy of 1.0 from Blender's Convolve node.
+2. The same denoised scene-linear 3840 x 2160 F40 EXR was processed through
+   the source-exact Lensfun/Map UV V3 stage with the
+   kernel bypassed and active. The active result retained 95.63 percent of the
+   strong-edge gradient metric, had a mean-luminance ratio of 1.00030, and a
+   55.24 dB PSNR relative to the bypass. Visual inspection found the expected
+   mild diffraction softening without glow halos, colour fringes, or framing
+   changes.
+
+The old generic Fog Glow node remains muted as a rejected PSF approximation.
+No arbitrary bloom, flare, veiling glare, chromatic diffraction, sensor noise,
+white balance, or sharpening was added. The contract is valid only for the
+named camera at f/8 and 3840 x 2160. A read-only audit now checks the active
+camera, lens state, output, colour management, compositor nodes, profile mix,
+neutral fallback, and diffraction qualification before an expensive render:
+
+```text
+research/projects/driveclub_f40/camera_pipeline.json
+workflows/blender/scripts/audit_camera_pipeline.py
+```
+
+The current live audit passes all 50 checks, including final sampling,
+denoising, compositor-device state, active map names, packed status, dimensions,
+and all four float32 map hashes. An intentional unsaved f/5.6
+mismatch then failed only `camera.aperture_f_number` with exit status 2, after
+which f/8 was restored and the scene resaved. A passed audit proves state
+identity, not optical accuracy; the impulse and same-source 4K gates remain the
+visual and numerical evidence.
 
 The active atmosphere prior is:
 
@@ -338,6 +436,8 @@ Blender text datablock `VA_REAL_LENS_CANDIDATE` but remains disabled.
    silently erased.
 8. Final evidence retains atmosphere-off, no-post, diagnostic passes, and the
    active manifest.
+9. Camera-specific stages must pass the machine-readable camera contract before
+   a final render; mismatch is a failure, not an invitation to retune the image.
 
 ## Sources
 
@@ -354,5 +454,8 @@ Blender text datablock `VA_REAL_LENS_CANDIDATE` but remains disabled.
 - [Canon EF 35mm f/2 IS USM](https://www.cla.canon.com/en/p/ef-35mm-f-2-is-usm)
 - [Canon EF 50mm f/1.8 STM](https://www.usa.canon.com/shop/p/ef-50mm-f-1-8-stm)
 - [Canon EF 85mm f/1.4L IS USM](https://www.cla.canon.com/en/p/ef-85mm-f-1-4l-is-usm)
+- [Canon â€” Reading and Understanding Lens MTF Charts](https://www.usa.canon.com/learning/training-articles/training-articles-list/reading-and-understanding-lens-mtf-charts)
+- [Edmund Optics â€” The Airy Disk](https://www.edmundoptics.com/knowledge-center/application-notes/imaging/limitations-on-resolution-and-contrast-the-airy-disk/)
+- [Blender 5.2 Python API â€” Compositor Convolve Node](https://docs.blender.org/api/5.2/bpy.types.CompositorNodeConvolve.html)
 - [Lensfun Canon SLR calibration data](https://github.com/lensfun/lensfun/blob/698a39eea69be00f4f25b6da6c1ad34b1f162b50/data/db/slr-canon.xml)
 - [Lensfun source at the audited commit](https://github.com/lensfun/lensfun/tree/698a39eea69be00f4f25b6da6c1ad34b1f162b50)

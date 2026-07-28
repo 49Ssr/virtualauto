@@ -104,6 +104,47 @@ it has been independently reproduced by VirtualAuto.
 
 ## Camera and lens calibration references
 
+### SRC-ENV-CANON-5D4
+
+- Class: `MANUFACTURER-DOC`
+- Source: [Canon EOS 5D Mark IV](https://www.usa.canon.com/shop/p/eos-5d-mark-iv)
+- Use: full-frame sensor format, 30.4 MP capture dimensions, pixel-pitch
+  derivation, and confirmation that an optical low-pass filter is installed.
+- Limitation: no OLPF transfer function, CFA spectral sensitivity, demosaic,
+  sharpening, noise, or complete camera-response function is disclosed.
+
+### SRC-ENV-CANON-EF85-14L
+
+- Class: `MANUFACTURER-DOC`
+- Source: [Canon EF 85mm f/1.4L IS USM](https://www.usa.canon.com/shop/p/ef-85mm-f-1-4l-is-usm)
+- Use: lens identity, 14-element/10-group construction, nine-blade aperture,
+  and Canon's ASC flare/ghost-suppression claim.
+- Limitation: product specifications do not disclose the optical prescription,
+  field-dependent PSF, pupil shape at f/8, or measured flare kernel.
+
+### SRC-ENV-CANON-MTF
+
+- Class: `MANUFACTURER-DOC`
+- Source: [Canon â€” Reading and Understanding Lens MTF Charts](https://www.usa.canon.com/learning/training-articles/training-articles-list/reading-and-understanding-lens-mtf-charts)
+- Use: Canon's statement that current lens MTF charts are measured wide open.
+- Limitation: the chart cannot be converted into the selected lens's f/8 PSF.
+
+### SRC-ENV-AIRY-DISK
+
+- Class: `AUTHORITATIVE-TECHNICAL`
+- Source: [Edmund Optics â€” The Airy Disk](https://www.edmundoptics.com/knowledge-center/application-notes/imaging/limitations-on-resolution-and-contrast-the-airy-disk/)
+- Use: ideal circular-aperture diffraction relation and first-zero diameter.
+- Limitation: the ideal Airy model omits real pupil geometry, aberrations,
+  coatings, focus error, field position, sensor filtering, and processing.
+
+### SRC-ENV-BLENDER-CONVOLVE-5.2
+
+- Class: `BLENDER-DOC`
+- Source: [Blender 5.2 Python API â€” Compositor Convolve Node](https://docs.blender.org/api/5.2/bpy.types.CompositorNodeConvolve.html)
+- Use: confirmation that Blender exposes a compositor image-convolution node;
+  exact socket behaviour was separately probed and impulse-tested in 5.2.0.
+- Limitation: node availability does not validate the supplied optical kernel.
+
 ### SRC-ENV-LENSFUN-MANUAL
 
 - Class: `UPSTREAM-DOC`
@@ -126,11 +167,14 @@ it has been independently reproduced by VirtualAuto.
 
 - Class: `PRIMARY-IMPLEMENTATION`
 - Source: [Lensfun source at pinned commit](https://github.com/lensfun/lensfun/tree/698a39eea69be00f4f25b6da6c1ad34b1f162b50)
-- Use: coordinate normalization, reverse PTLens solving, reverse poly3 TCA,
-  PA vignetting evaluation, callback order, and aperture/distance interpolation
-  behaviour used by the 85 mm compositor implementation.
+- Use: coordinate normalization, focal-preserving PTLens coefficient rescaling,
+  reverse PTLens solving, poly3 TCA rescaling and reverse solving, PA
+  vignetting coefficient rescaling/evaluation, callback order, and
+  aperture/distance interpolation behaviour used by the 85 mm compositor
+  implementation.
 - Limitation: VirtualAuto reproduced the relevant equations in generated maps;
-  it did not link the Lensfun binary into Blender.
+  it did not link the Lensfun binary into Blender. Scope is pinned to the
+  audited source revision and current supported model subset.
 
 ### SRC-ENV-PBRT-REALISTIC-CAMERA
 

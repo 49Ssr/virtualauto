@@ -46,6 +46,45 @@ class RepositoryTests(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.Draft202012Validator(schema).validate(example)
 
+    def test_f40_camera_contract_is_schema_valid(self) -> None:
+        schema = json.loads(
+            (ROOT / "lab/schemas/camera-pipeline.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        contract = json.loads(
+            (
+                ROOT
+                / "research/projects/driveclub_f40/camera_pipeline.json"
+            ).read_text(encoding="utf-8")
+        )
+        jsonschema.Draft202012Validator(schema).validate(contract)
+        self.assertEqual(contract["status"], "qualified")
+        self.assertGreater(len(contract["explicitly_unset"]), 0)
+        image_checks = contract["compositor"]["image_checks"]
+        self.assertEqual(len(image_checks), 4)
+        self.assertTrue(
+            all(
+                len(check["float32_sha256_native_little_endian"]) == 64
+                for check in image_checks
+            )
+        )
+
+    def test_camera_audit_is_declared_read_only(self) -> None:
+        source = (
+            ROOT / "workflows/blender/scripts/audit_camera_pipeline.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("bpy.ops.wm.save", source)
+        self.assertNotIn("bpy.ops.render", source)
+        self.assertNotIn(".new(", source)
+        self.assertNotIn(".remove(", source)
+
+    def test_lensfun_builder_reloads_portable_equations(self) -> None:
+        source = (
+            ROOT / "workflows/blender/scripts/build_lensfun_maps.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("importlib.reload(lensfun_models)", source)
+
     def test_master_index_generation_is_deterministic(self) -> None:
         before = hashlib.sha256(INDEX.read_bytes()).hexdigest()
         result = subprocess.run(

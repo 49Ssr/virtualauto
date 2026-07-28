@@ -61,22 +61,61 @@
   is disconnected from beauty and labelled diagnostic-only;
 - the compositor order is noisy scene-linear radiance, guided denoise, an
   optional calibrated 85 mm distortion/TCA/vignetting stage, neutral fallback,
-  a disabled unmeasured PSF approximation, then output;
+  a qualified ideal f/8 diffraction kernel for 3840 x 2160, a disabled generic
+  Fog Glow approximation, then output;
 - the original 36 x 24 mm / 50 mm `Camera2` remains untouched and ideal;
 - a non-destructive 35/50/85 mm full-frame camera suite now shares one focus
   target while changing camera distance with focal length; the user selected
   the 85 mm compressed view as the current active camera;
 - camera metadata records Canon EOS 5D Mark IV and Canon EF prime-lens
   candidates, verified aperture-blade counts, and pinned Lensfun calibration
-  rows; the Canon EF 85 mm f/1.4L IS USM profile now has a generated and checked
-  distortion/TCA/vignetting implementation active for the current 85 mm camera,
-  while PSF, sensor noise, shutter, and camera response remain unapplied or
-  unset;
+  rows; the Canon EF 85 mm f/1.4L IS USM profile now has a generated,
+  source-exact, hash-locked distortion/TCA/vignetting implementation active for
+  the current 85 mm camera;
+  a separately qualified ideal circular-aperture diffraction component is
+  active for f/8 at 3840 x 2160, while the measured lens PSF, sensor MTF/noise,
+  shutter, white balance, and camera response remain unapplied or unset;
 - three 960 x 540 / 32-sample perspective renders, an 85 mm beauty A/B, four
   calibration-pattern renders, a scene-linear 3840 x 2160 source, a full-size
   lens A/B, and pre-suite/pre-lens checkpoints are retained privately; the
   original 3840 x 2160 effective render configuration and 250-sample setting
   were restored after the comparisons.
+
+### Render-cost audit
+
+`OBS-INSTRUMENT`, read-only audit plus unsaved/restored 960 x 540 ablation on
+2026-07-28:
+
+- Cycles is using the RTX 4070 Laptop GPU through OptiX; the CPU device is not
+  enabled for the active OptiX backend.
+- The render-visible scene contains 287 meshes and approximately 249,218 source
+  polygons. No render subdivision modifier is active, and the excluded bounded
+  mist is not linked into the World.
+- The final state uses 250 samples, adaptive threshold 0.01, OIDN, GPU/full-
+  precision compositing, Light Tree, 10 maximum bounces, 10 transmission
+  bounces, and reflective/refractive caustics.
+- After one persistent-data warm-up, a controlled 960 x 540 / 32-sample raw
+  render took 1.675 s at the final bounce/caustic state. Disabling caustics took
+  1.657 s, and also reducing diffuse/glossy/transmission bounces took 1.638 s.
+  The 1.1-2.2 percent timing reduction is too small to justify changing final
+  transport settings from this test.
+- The two lower-cost images differ from baseline by about 51.3 dB PSNR at only
+  32 samples. That comparison includes path/noise-sequence changes and is not a
+  claim of perceptual equivalence.
+- The same-source 4K compositor gates took approximately 58 s both before and
+  after ideal diffraction, placing the added convolution cost within timing
+  noise. The existing multi-channel Lensfun remap and full-resolution operation
+  domain, not the Airy kernel, dominate the post stage.
+- Repeating the gate after the source-exact Lensfun V2 correction took 60.4 s
+  without diffraction and 58.4 s with it. The reversed timing confirms that
+  this two-run difference is timing noise; it does not establish zero
+  convolution cost.
+
+No production render setting was changed. The largest defensible speed lever is
+therefore a separate preview/draft state or fewer final samples after a real
+noise-convergence sweep, not unvalidated bounce deletion. Persistent Data may
+help repeated frames, but remains off until VRAM and stale-data behaviour are
+tested at full resolution.
 
 The active research contract is documented in
 [Real camera and atmosphere pipeline](../../environment/REAL_CAMERA_AND_ATMOSPHERE_PIPELINE.md).
@@ -200,6 +239,7 @@ or permission to redistribute the package.
 ## Runtime configuration boundary
 
 - Machine-readable F40 project manifest: not implemented
+- Machine-readable camera/compositor contract: implemented and live-audited
 - Material or asset compiler: not implemented
 - Panel Colour Offset: unknown; no source or calibration record
 - Bumper Gloss Mismatch: unknown; no source or calibration record
@@ -222,6 +262,9 @@ these values unresolved rather than inventing plausible defaults.
    require `complete_for_index` before listing or unpacking.
 5. Catalogue the complete F40 RPK dependency graph before writing a model
    converter; preserve every unknown vertex and material field.
+6. Run `audit_camera_pipeline.py` before the next final camera render; bypass or
+   regenerate camera-specific stages when camera, aperture, resolution, colour
+   management, or node state differs from the qualified contract.
 
 The operational tooling is ready for step 1. Filesystem unpack remains blocked
 until a composed base-plus-update set passes the structural inspector. No F40
@@ -230,11 +273,82 @@ extracted assets remain absent from this checkout.
 
 ## Changelog
 
+### 2026-07-28
+
+- Audited the pinned Lensfun implementation rather than relying only on its
+  database schema. The audit found that the first map generator used PTLens
+  database coefficients directly and omitted Lensfun's focal-preserving source
+  rescaling. The visually plausible V1 maps are retained but marked
+  superseded; the mistake is now explicit negative implementation evidence.
+- Added a portable, `bpy`-free source-pinned implementation of Lensfun
+  normalization, PTLens rescaling and reverse solving, poly3 TCA, and PA
+  vignetting, plus a Blender-hosted packed-map generator that does not wire,
+  save, or qualify its own output.
+- Generated source-exact V2 maps, then rejected their Blender adapter after an
+  identity-map falsification test proved that `x/(width-1)` is not Blender's
+  Map UV pixel-centre convention. The permanent 64 x 32 test measured 17.21 dB
+  PSNR for that convention and bit-exact reproduction for
+  `(x+0.5)/width`, `(y+0.5)/height`.
+- Generated V3 with the verified Map UV convention and froze its 960 x 540
+  float32 hashes in the camera contract. Relative to V2 at 4K with diffraction,
+  V3 measured 34.59 dB PSNR, 86.80 percent strong-edge-gradient ratio, and an
+  overall luminance ratio of 0.99901. The larger edge difference reveals V2's
+  resampling error rather than a new optical effect.
+- Repeated straight-grid, flat-field, centred-edge, and off-axis-edge gates.
+  The 0.5 scene-linear flat field measured 0.50001 at centre and 0.41920 one
+  pixel inside every corner, with no unexpected asymmetry, fringe, halo, or
+  framing failure.
+- Re-ran the ideal-diffraction gate after the V3 correction: mean-luminance
+  ratio 1.00030, strong-edge gradient ratio 0.95615, and PSNR 55.24 dB relative
+  to the source-exact V3 bypass.
+- Expanded the read-only live audit from 34 to 50 checks. It now verifies the
+  four active map names, dimensions, packed state, and exact float32 pixel
+  hashes in addition to camera, render, colour-management, and node state; the
+  recovered live file passes all 50 checks against V3.
+- Hardened the Blender map generator against stale imported code by explicitly
+  reloading the portable Lensfun module on each run. An initial V3 generation
+  attempt exposed Blender's persistent module cache by returning V2 hashes and
+  was rejected before wiring.
+- Preserved hash-matched pre-correction, post-implementation, and
+  post-validation `.blend` checkpoints outside Git.
+
+- Recovered cleanly from a Blender crash caused by a temporary probe retaining
+  an RNA vector after its source node had been deleted; this was a probe-lifetime
+  error, not a render, GPU, or scene failure. The failed probe did not remain in
+  the saved file.
+- Restored Lens Distortion dispersion to zero and retained a byte-identical
+  pre-change recovery checkpoint.
+- Added an ideal circular-aperture f/8 diffraction component using a
+  pixel-integrated 9 x 9 Airy intensity kernel at 550 nm for the current
+  3840 x 2160 output. It remains explicitly distinct from a measured Canon lens
+  or sensor PSF.
+- Passed a synthetic impulse test: all 81 coefficients were recovered and the
+  normalized output energy was 1.0.
+- Passed a same-source 4K beauty gate: mean-luminance ratio 1.00030, strong-edge
+  gradient ratio 0.9563, and PSNR 55.29 dB relative to bypass, with no observed
+  glow halo, chromatic fringe, or framing change.
+- Preserved pre-implementation, post-implementation, and post-validation `.blend`
+  checkpoints outside Git.
+- Added a machine-readable camera/compositor contract and a read-only audit;
+  its initial live run passed all 34 camera, render, sampling, denoising,
+  colour-management, compositor-device, and node checks. The V3 work above
+  subsequently expanded this to 50 checks.
+- Proved the audit fails closed by temporarily changing the unsaved aperture to
+  f/5.6: it returned exit status 2 and identified only the aperture mismatch;
+  f/8 was restored before resaving.
+- Left unmeasured flare, ghosts, veiling glare, optical low-pass-filter MTF,
+  CFA/demosaic response, sensor noise, Canon colour response, white balance, and
+  sharpening unset rather than creating stylistic substitutes.
+- Audited the render-cost state and ran a small caustic/bounce ablation. The
+  proposed transport cuts saved only 1.1-2.2 percent in the controlled low-cost
+  screen, so final render settings were left unchanged.
+
 ### 2026-07-27
 
-- Implemented the pinned Lensfun Canon EF 85 mm f/1.4L IS USM PTLens
+- Implemented the first Lensfun Canon EF 85 mm f/1.4L IS USM PTLens
   distortion, poly3 TCA, and aperture/distance-interpolated PA vignetting as a
-  packed, bypassable compositor stage.
+  packed, bypassable compositor stage. This historical V1 omitted source-level
+  PTLens coefficient rescaling and was superseded by V2 on 2026-07-28.
 - Found and corrected an initially black Map UV result: Blender's Cycles UV-pass
   convention requires red/green coordinates with a constant blue validity
   channel of one. The failure was retained as a diagnostic result rather than
@@ -247,7 +361,7 @@ extracted assets remain absent from this checkout.
 - The corrected profile retained 97.98 percent of the neutral central strong-edge
   gradient metric and 97.51 percent of mean display-referred luminance. These
   are implementation diagnostics, not measured MTF or exposure claims.
-- Activated the qualified profile for the current 85 mm camera through
+- Activated the then-calibration-checked V1 profile for the current 85 mm camera through
   `LF85_09_CAMERA_SPECIFIC_MIX`. A proposed automatic camera-compatibility driver
   was invalid in the live compositor and was removed; Factor 0 is the required
   manual bypass before selecting the 35 or 50 mm cameras.

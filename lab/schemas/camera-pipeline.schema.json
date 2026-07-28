@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/49Ssr/virtualauto/lab/schemas/camera-pipeline.schema.json",
+  "title": "VirtualAuto camera pipeline contract",
+  "description": "A render-state contract for camera-specific compositor stages. It records qualified combinations and explicit unknowns; it is not a measured camera-response model.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "id",
+    "status",
+    "blender_version",
+    "camera",
+    "render",
+    "colour_management",
+    "lensfun",
+    "compositor",
+    "qualified_scope",
+    "explicitly_unset"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^CAM-[A-Z0-9]+(?:-[A-Z0-9]+)+$"},
+    "status": {
+      "enum": [
+        "specified",
+        "implemented",
+        "qualified",
+        "rejected",
+        "superseded"
+      ]
+    },
+    "blender_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_name",
+        "focal_length_mm",
+        "sensor_width_mm",
+        "sensor_height_mm",
+        "aperture_f_number"
+      ],
+      "properties": {
+        "object_name": {"type": "string", "minLength": 1},
+        "focal_length_mm": {"type": "number", "exclusiveMinimum": 0},
+        "sensor_width_mm": {"type": "number", "exclusiveMinimum": 0},
+        "sensor_height_mm": {"type": "number", "exclusiveMinimum": 0},
+        "aperture_f_number": {"type": "number", "exclusiveMinimum": 0},
+        "focus_object": {"type": ["string", "null"]},
+        "focus_distance_m": {"type": ["number", "null"], "exclusiveMinimum": 0}
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effective_resolution",
+        "engine",
+        "device",
+        "samples",
+        "adaptive_sampling",
+        "adaptive_threshold",
+        "denoising",
+        "denoiser",
+        "compositor_device",
+        "compositor_precision"
+      ],
+      "properties": {
+        "effective_resolution": {
+          "type": "array",
+          "prefixItems": [
+            {"type": "integer", "minimum": 1},
+            {"type": "integer", "minimum": 1}
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "engine": {"type": "string", "minLength": 1},
+        "device": {"type": "string", "minLength": 1},
+        "samples": {"type": "integer", "minimum": 1},
+        "adaptive_sampling": {"type": "boolean"},
+        "adaptive_threshold": {"type": "number", "minimum": 0},
+        "denoising": {"type": "boolean"},
+        "denoiser": {"type": "string", "minLength": 1},
+        "compositor_device": {"type": "string", "minLength": 1},
+        "compositor_precision": {"type": "string", "minLength": 1}
+      }
+    },
+    "colour_management": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["view_transform", "look", "exposure", "gamma"],
+      "properties": {
+        "view_transform": {"type": "string", "minLength": 1},
+        "look": {"type": "string"},
+        "exposure": {"type": "number"},
+        "gamma": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "lensfun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_commit",
+        "lens_model",
+        "reverse",
+        "map_resolution",
+        "crop_factor",
+        "calibration_aspect_ratio",
+        "distortion",
+        "tca",
+        "vignetting",
+        "image_names"
+      ],
+      "properties": {
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "lens_model": {"type": "string", "minLength": 3},
+        "reverse": {"const": true},
+        "map_resolution": {
+          "type": "array",
+          "prefixItems": [
+            {"type": "integer", "minimum": 2},
+            {"type": "integer", "minimum": 2}
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "crop_factor": {"type": "number", "exclusiveMinimum": 0},
+        "calibration_aspect_ratio": {"type": "number", "exclusiveMinimum": 0},
+        "distortion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "a", "b", "c"],
+          "properties": {
+            "model": {"const": "ptlens"},
+            "a": {"type": "number"},
+            "b": {"type": "number"},
+            "c": {"type": "number"}
+          }
+        },
+        "tca": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "vr", "vb"],
+          "properties": {
+            "model": {"const": "poly3"},
+            "vr": {"type": "number"},
+            "vb": {"type": "number"}
+          }
+        },
+        "vignetting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "aperture", "distance_m", "k1", "k2", "k3"],
+          "properties": {
+            "model": {"const": "pa"},
+            "aperture": {"type": "number", "exclusiveMinimum": 0},
+            "distance_m": {"type": "number", "exclusiveMinimum": 0},
+            "k1": {"type": "number"},
+            "k2": {"type": "number"},
+            "k3": {"type": "number"}
+          }
+        },
+        "image_names": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["red", "green", "blue", "vignette"],
+          "properties": {
+            "red": {"type": "string", "minLength": 1},
+            "green": {"type": "string", "minLength": 1},
+            "blue": {"type": "string", "minLength": 1},
+            "vignette": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "compositor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_group",
+        "required_nodes",
+        "value_checks",
+        "image_checks"
+      ],
+      "properties": {
+        "node_group": {"type": "string", "minLength": 1},
+        "required_nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "muted"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "muted": {"type": "boolean"},
+              "status_property": {"type": "string"},
+              "status_value": {"type": "string"}
+            }
+          }
+        },
+        "value_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["node", "input_identifier", "expected", "tolerance"],
+            "properties": {
+              "node": {"type": "string", "minLength": 1},
+              "input_identifier": {"type": "string", "minLength": 1},
+              "expected": {"type": "number"},
+              "tolerance": {"type": "number", "minimum": 0}
+            }
+          }
+        },
+        "image_checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "node",
+              "image_name",
+              "width",
+              "height",
+              "float32_sha256_native_little_endian",
+              "packed"
+            ],
+            "properties": {
+              "node": {"type": "string", "minLength": 1},
+              "image_name": {"type": "string", "minLength": 1},
+              "width": {"type": "integer", "minimum": 2},
+              "height": {"type": "integer", "minimum": 2},
+              "float32_sha256_native_little_endian": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "packed": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "qualified_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 3},
+      "uniqueItems": true
+    },
+    "explicitly_unset": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 3},
+      "uniqueItems": true
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 3},
+      "uniqueItems": true
+    }
+  }
+}
