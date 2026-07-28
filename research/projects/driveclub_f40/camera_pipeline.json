@@ -1,0 +1,168 @@
+{
+  "$schema": "../../../lab/schemas/camera-pipeline.schema.json",
+  "schema_version": "1.0.0",
+  "id": "CAM-VA-F40-85-F8-4K",
+  "status": "qualified",
+  "blender_version": "5.2.0",
+  "camera": {
+    "object_name": "VA_CAM_5D4_85_COMPRESSION",
+    "focal_length_mm": 85.0,
+    "sensor_width_mm": 36.0,
+    "sensor_height_mm": 24.0,
+    "aperture_f_number": 8.0,
+    "focus_object": "VA_F40_Focus_Hero",
+    "focus_distance_m": 9.336846317763271
+  },
+  "render": {
+    "effective_resolution": [3840, 2160],
+    "engine": "CYCLES",
+    "device": "GPU",
+    "samples": 250,
+    "adaptive_sampling": true,
+    "adaptive_threshold": 0.01,
+    "denoising": true,
+    "denoiser": "OPENIMAGEDENOISE",
+    "compositor_device": "GPU",
+    "compositor_precision": "FULL"
+  },
+  "colour_management": {
+    "view_transform": "ACES 2.0",
+    "look": "None",
+    "exposure": -2.0,
+    "gamma": 1.0
+  },
+  "lensfun": {
+    "source_commit": "698a39eea69be00f4f25b6da6c1ad34b1f162b50",
+    "lens_model": "Canon EF 85mm f/1.4L IS USM",
+    "reverse": true,
+    "map_resolution": [960, 540],
+    "crop_factor": 1.0,
+    "calibration_aspect_ratio": 1.5,
+    "distortion": {
+      "model": "ptlens",
+      "a": 0.00984,
+      "b": -0.0325,
+      "c": 0.0316
+    },
+    "tca": {
+      "model": "poly3",
+      "vr": 0.9999438,
+      "vb": 0.999933
+    },
+    "vignetting": {
+      "model": "pa",
+      "aperture": 8.0,
+      "distance_m": 9.336846317763271,
+      "k1": -0.1757052864,
+      "k2": -0.026392079,
+      "k3": 0.0396991339
+    },
+    "image_names": {
+      "red": "VA_LENSFUN85_STMAP_R_SOURCEEXACT_MAPUV_V3",
+      "green": "VA_LENSFUN85_STMAP_G_SOURCEEXACT_MAPUV_V3",
+      "blue": "VA_LENSFUN85_STMAP_B_SOURCEEXACT_MAPUV_V3",
+      "vignette": "VA_LENSFUN85_VIGNETTE_F8_SOURCEEXACT_MAPUV_V3"
+    }
+  },
+  "compositor": {
+    "node_group": "VA_F40_Compositor_v1",
+    "required_nodes": [
+      {
+        "name": "LF85_09_CAMERA_SPECIFIC_MIX",
+        "muted": false
+      },
+      {
+        "name": "20_LENS_GEOMETRY_NEUTRAL",
+        "muted": false
+      },
+      {
+        "name": "DF8_03_IDEAL_DIFFRACTION",
+        "muted": false,
+        "status_property": "va_status",
+        "status_value": "qualified_active_for_current_f8_4k_camera"
+      },
+      {
+        "name": "30_PSF_APPROX_DISABLED",
+        "muted": true
+      }
+    ],
+    "value_checks": [
+      {
+        "node": "LF85_09_CAMERA_SPECIFIC_MIX",
+        "input_identifier": "Factor_Float",
+        "expected": 1.0,
+        "tolerance": 0.000001
+      },
+      {
+        "node": "20_LENS_GEOMETRY_NEUTRAL",
+        "input_identifier": "Distortion",
+        "expected": 0.0,
+        "tolerance": 0.000001
+      },
+      {
+        "node": "20_LENS_GEOMETRY_NEUTRAL",
+        "input_identifier": "Dispersion",
+        "expected": 0.0,
+        "tolerance": 0.000001
+      }
+    ],
+    "image_checks": [
+      {
+        "node": "LF85_02_STMAP_R",
+        "image_name": "VA_LENSFUN85_STMAP_R_SOURCEEXACT_MAPUV_V3",
+        "width": 960,
+        "height": 540,
+        "float32_sha256_native_little_endian": "02c9f3c8ad33900a2ce23d5d153f44f944dfa2d88bff7cf62d5c372e22fb46cd",
+        "packed": true
+      },
+      {
+        "node": "LF85_02_STMAP_G",
+        "image_name": "VA_LENSFUN85_STMAP_G_SOURCEEXACT_MAPUV_V3",
+        "width": 960,
+        "height": 540,
+        "float32_sha256_native_little_endian": "63701f2fbf654981fecf3fde0fe91b734dbe69847bf2c788abb67119038e9b69",
+        "packed": true
+      },
+      {
+        "node": "LF85_02_STMAP_B",
+        "image_name": "VA_LENSFUN85_STMAP_B_SOURCEEXACT_MAPUV_V3",
+        "width": 960,
+        "height": 540,
+        "float32_sha256_native_little_endian": "77f7a127f88712aad21bf593e2a25b981b562c18b3efa006d807f8c65961665b",
+        "packed": true
+      },
+      {
+        "node": "LF85_04_VIGNETTE_MAP",
+        "image_name": "VA_LENSFUN85_VIGNETTE_F8_SOURCEEXACT_MAPUV_V3",
+        "width": 960,
+        "height": 540,
+        "float32_sha256_native_little_endian": "2de60846a8384807cb9d99801524916cbec53eca0e5e5dd487cfa8bd0bee09a1",
+        "packed": true
+      }
+    ]
+  },
+  "qualified_scope": [
+    "Pinned Lensfun distortion, transverse chromatic aberration, and f/8 vignetting for the Canon EF 85mm f/1.4L IS USM candidate, encoded with the Blender 5.2 Map UV pixel-centre convention",
+    "Ideal circular-aperture diffraction at 550 nm for f/8 and 3840 x 2160 output",
+    "ACES 2.0 display rendering at scene exposure -2.0"
+  ],
+  "explicitly_unset": [
+    "Measured field-dependent Canon lens PSF",
+    "Flare, ghosts, and veiling glare",
+    "Optical low-pass-filter MTF",
+    "CFA and demosaic response",
+    "Sensor noise and capture ISO",
+    "Capture shutter and motion response",
+    "Canon camera colour response",
+    "Capture white balance",
+    "Capture sharpening"
+  ],
+  "source_ids": [
+    "SRC-ENV-LENSFUN-SOURCE-698A39",
+    "SRC-ENV-LENSFUN-CALIBRATION",
+    "SRC-ENV-CANON-5D4",
+    "SRC-ENV-CANON-EF85-14L",
+    "SRC-ENV-AIRY-DISK",
+    "SRC-ENV-BLENDER-CONVOLVE-5.2"
+  ]
+}

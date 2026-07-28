@@ -142,6 +142,50 @@ Blender compositor glare is an image-space effect. It may reproduce a desired
 look, but it does not replace a finite emitter, atmospheric scattering, or
 correct scene exposure.
 
+For the current F40 85 mm / f/8 / 3840 x 2160 state, VirtualAuto uses a
+normalized 9 x 9 ideal Airy intensity kernel after the qualified, source-exact
+Lensfun/Map UV V3 stage.
+It passed a synthetic impulse test and a same-source 4K beauty A/B. Its scope is
+strictly ideal circular-aperture diffraction at a 550 nm reference wavelength;
+it is not a measured Canon lens PSF, optical low-pass-filter response, sensor
+bloom, or camera sharpening model. The previous generic Fog Glow approximation
+remains muted.
+
+Camera order is therefore explicit:
+
+```text
+scene-linear denoised radiance
+-> calibrated geometric/TCA/vignetting profile
+-> ideal aperture diffraction (qualified state only)
+-> unresolved real-lens/sensor effects remain absent
+-> display rendering
+```
+
+The diffraction node must be bypassed or regenerated when aperture or effective
+output resolution changes. `camera_pipeline.json` and the read-only audit script
+make this dependency executable rather than relying on a node label or memory.
+
+The identical 4K source took approximately 54.6 seconds without diffraction and
+59.4 seconds with diffraction during the source-exact V3 gate. A prior V2 gate
+showed the opposite ordering, so a single pair cannot isolate convolution cost.
+The ideal
+diffraction node is not the dominant cause of the current compositor cost.
+Profiling should target the three channel-specific Map UV operations and their
+full-resolution domains before simplifying the validated optical model.
+
+The current map generator reproduces the audited Lensfun coordinate
+normalization, PTLens coefficient rescaling, reverse Newton solve, poly3 TCA,
+and PA vignetting subset in portable Python. The active camera contract freezes
+the exact map names, dimensions, packed state, and float32 hashes. This closes
+the failure mode where a visually plausible but mathematically different map
+could remain attached to a correctly labelled node.
+
+The Map UV adapter has its own executable identity gate. It found that
+`x/(width-1)` is not Blender's pixel-centre identity convention; generated maps
+must encode `(x+0.5)/width` and `(y+0.5)/height`. The generator also reloads its
+portable math module on every run because Blender retains Python imports across
+interactive executions. These are pipeline invariants, not lens aesthetics.
+
 `VA-RULE`: flare, bloom, glare, and starburst contributions are independently
 toggleable and recorded.
 
@@ -246,6 +290,7 @@ For paint validation:
 | shutter sweep | motion fixed | shutter | rain/road/particle motion |
 | grade bypass | yes | display transform | preserve scene-linear diagnosis |
 | flare bypass | yes | compositor/lens effects | separate emitter/volume from post |
+| camera-contract audit | yes | camera/compositor state | prevent a qualified profile or PSF component being reused outside its tested scope |
 
 ## 17. Failure signatures
 
