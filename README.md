@@ -22,8 +22,9 @@ a convincing render, with clear controls and a manageable cost.
 
 ## Continuum Flow development build
 
-The VirtualAuto variant keeps Continuum's existing nodes and solver. It fixes
-preview-buffer reallocation, allows appearance adjustments during a bake,
+The VirtualAuto variant is based on **Continuum Flow 0.4.0 Alpha** and keeps
+its existing nodes and solver. It fixes preview-buffer reallocation, allows
+appearance adjustments during a bake,
 aligns VDB sequences with the requested timeline start and bounds the number of
 exported frames.
 

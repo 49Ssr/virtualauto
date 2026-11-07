@@ -1,6 +1,7 @@
 # Continuum Flow — VirtualAuto development build
 
-The local variant fixes Blender workflow problems in Continuum Flow 0.4.0.
+The local variant fixes Blender workflow problems in Continuum Flow 0.4.0 Alpha.
+Upstream labels it an alpha pre-release; this variant retains that experimental status.
 Its existing nodes, saved node identifiers and numerical kernels are retained.
 This is not yet a validated replacement for a production car-fire setup.
 
