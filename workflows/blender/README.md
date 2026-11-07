@@ -1,8 +1,8 @@
-# Blender implementation
+# Blender tools
 
-Executable Blender work is organised by responsibility. Each artifact must
-declare its Blender version, inputs, outputs, coordinate spaces, ownership,
-diagnostics, performance assumptions, and validation status.
+Start with the tool for the task. Compatibility and test results belong to
+each workflow; the historical Blender 5.0.1 fixture is not the current version
+requirement for every tool.
 
 - [`addon/virtualauto_blender/`](addon/virtualauto_blender/) contains the first
   artist-facing development add-on.
@@ -12,15 +12,18 @@ diagnostics, performance assumptions, and validation status.
 - [`mcp/`](mcp/README.md) pins and operates the official live Blender bridge.
 - [Verified Blender 5.0.1 Windows toolchain record](toolchains/BLD-BLENDER-501-WINDOWS-X64.json)
 
-`virtualauto blender-smoke` is the first accepted structural path. It creates a
-temporary original fixture; it does not use or validate an automotive asset.
+`virtualauto blender-smoke` runs the original Blender 5.0.1 structural smoke
+test. It creates a temporary synthetic scene, not a smoke/fluid simulation.
+For fire and smoke simulation use `virtualauto continuum build` and the
+Continuum record above; its Windows package was checked in Blender 5.2.3 LTS.
 
 ## Execution boundary
 
 `src/virtualauto/` contains no `bpy` import. The ordinary CLI can validate
 schemas, inspect paths, register sources, record evidence, and orchestrate tools
 on a machine without Blender. Blender API calls belong only in scripts launched
-inside a separate headless Blender process or, in future, a Blender add-on.
+inside Blender, either in a separate background process, through the live
+connector, or in an add-on.
 
 ## Artist interface
 
