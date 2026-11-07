@@ -61,7 +61,7 @@ index d6c5a94..61587ae 100644
  
              if self.bake_directory is not None:
 diff --git a/Internal/Core/export/export_config.py b/Internal/Core/export/export_config.py
-index 596ee5b..79fcc12 100644
+index 596ee5b..5c1db9f 100644
 --- a/Internal/Core/export/export_config.py
 +++ b/Internal/Core/export/export_config.py
 @@ -102,33 +102,32 @@ def set_subdirectory_paths(config_dict, bake_directory):
@@ -119,6 +119,16 @@ index 596ee5b..79fcc12 100644
  
  
  def export_particle_system_npzs(config_dict, export_directory):
+@@ -843,6 +842,8 @@ def build_animations(node, start_frame, end_frame):
+     sampled = {
+         name: [] for name in property_names if node_property_is_animated(node, name)
+     }
++    if not sampled:
++        return {}, {}
+-
++
+     try:
+         for frame in range(start_frame, end_frame):
 diff --git a/Internal/Core/export/export_geometry.py b/Internal/Core/export/export_geometry.py
 index da1395b..36cd481 100644
 --- a/Internal/Core/export/export_geometry.py
@@ -382,8 +392,288 @@ index 2690adb..e9dd7dd 100644
              output_index += 1
              next_output_time += output_time_step
  
+diff --git a/Solver/Kernel/OpenCL/voxelise_mesh.cl b/Solver/Kernel/OpenCL/voxelise_mesh.cl
+index fec13cc..2df3aa8 100644
+--- a/Solver/Kernel/OpenCL/voxelise_mesh.cl
++++ b/Solver/Kernel/OpenCL/voxelise_mesh.cl
+@@ -1,119 +1,155 @@
+-__kernel void surface(__global const float *triangles,
+-                      __global uchar *mask,
+-                      const int triangle_count,
+-                      const int size_x,
+-                      const int size_y,
+-                      const int size_z,
+-                      const float delta,
+-                      const float ox,
+-                      const float oy,
+-                      const float oz) {
+-    /*
+-    Voxelise a meshes surface
+-    */
+-    const int i = get_global_id(0);
+-    const int j = get_global_id(1);
+-    const int k = get_global_id(2);
+-
+-    if (i >= size_x || j >= size_y || k >= size_z)
+-        return;
+-
+-    const float x = ox + (float)i * delta;
+-    const float y = oy + (float)j * delta;
+-    const float z = oz + (float)k * delta;
+-
+-    for (int t = 0; t < triangle_count; ++t) {
+-        const int base = t * 9;
+-
+-        const float x0 = triangles[base + 0];
+-        const float y0 = triangles[base + 1];
+-        const float z0 = triangles[base + 2];
+-
+-        const float x1 = triangles[base + 3];
+-        const float y1 = triangles[base + 4];
+-        const float z1 = triangles[base + 5];
+-
+-        const float x2 = triangles[base + 6];
+-        const float y2 = triangles[base + 7];
+-        const float z2 = triangles[base + 8];
+-
+-        const float xmin = fmin(x0, fmin(x1, x2));
+-        const float xmax = fmax(x0, fmax(x1, x2));
+-
+-        const float ymin = fmin(y0, fmin(y1, y2));
+-        const float ymax = fmax(y0, fmax(y1, y2));
+-
+-        const float zmin = fmin(z0, fmin(z1, z2));
+-        const float zmax = fmax(z0, fmax(z1, z2));
+-
+-        if (x < xmin - delta || x > xmax + delta || y < ymin - delta || y > ymax + delta || z < zmin - delta ||
+-            z > zmax + delta)
+-            continue;
+-
+-        const float ax = x1 - x0;
+-        const float ay = y1 - y0;
+-        const float az = z1 - z0;
+-
+-        const float bx = x2 - x0;
+-        const float by = y2 - y0;
+-        const float bz = z2 - z0;
+-
+-        float nx = ay * bz - az * by;
+-        float ny = az * bx - ax * bz;
+-        float nz = ax * by - ay * bx;
+-
+-        const float length = sqrt(nx * nx + ny * ny + nz * nz);
+-
+-        if (length == 0.0f)
+-            continue;
+-
+-        const float distance = fabs(nx * (x - x0) + ny * (y - y0) + nz * (z - z0));
+-
+-        if (distance > delta * 0.87f * length)
+-            continue;
+-
+-        // Surface voxel.
+-        const int index = (i * size_y + j) * size_z + k;
+-
+-        mask[index] = 1;
+-
+-        // Normalize outward triangle normal.
+-        nx /= length;
+-        ny /= length;
+-        nz /= length;
+-
+-        // Move one voxel inward.
+-        int ii = i;
+-        int jj = j;
+-        int kk = k;
+-
+-        const float anx = fabs(nx);
+-        const float any_ = fabs(ny);
+-        const float anz = fabs(nz);
+-
+-        if (anx >= any_ && anx >= anz) {
+-            if (nx > 0.0f)
+-                ii -= 1;
+-            else
+-                ii += 1;
+-        } else if (any_ >= anz) {
+-            if (ny > 0.0f)
+-                jj -= 1;
+-            else
+-                jj += 1;
+-        } else {
+-            if (nz > 0.0f)
+-                kk -= 1;
+-            else
+-                kk += 1;
+-        }
+-
+-        if (ii >= 0 && ii < size_x && jj >= 0 && jj < size_y && kk >= 0 && kk < size_z) {
+-            const int inward_index = (ii * size_y + jj) * size_z + kk;
+-
+-            mask[inward_index] = 1;
+-        }
+-
+-        return;
+-    }
+-}
+\ No newline at end of file
++inline float segment_distance_squared(const float3 p, const float3 a, const float3 b) {
++    const float3 edge = b - a;
++    const float length_squared = dot(edge, edge);
++    const float t = length_squared > 0.0f
++                        ? clamp(dot(p - a, edge) / length_squared, 0.0f, 1.0f)
++                        : 0.0f;
++    const float3 offset = p - (a + t * edge);
++    return dot(offset, offset);
++}
++
++__kernel void surface(__global const float *triangles,
++                      __global uchar *mask,
++                      const int triangle_count,
++                      const int size_x,
++                      const int size_y,
++                      const int size_z,
++                      const float delta,
++                      const float ox,
++                      const float oy,
++                      const float oz) {
++    /*
++    Voxelise a meshes surface
++    */
++    const int i = get_global_id(0);
++    const int j = get_global_id(1);
++    const int k = get_global_id(2);
++
++    if (i >= size_x || j >= size_y || k >= size_z)
++        return;
++
++    const float x = ox + (float)i * delta;
++    const float y = oy + (float)j * delta;
++    const float z = oz + (float)k * delta;
++
++    for (int t = 0; t < triangle_count; ++t) {
++        const int base = t * 9;
++
++        const float x0 = triangles[base + 0];
++        const float y0 = triangles[base + 1];
++        const float z0 = triangles[base + 2];
++
++        const float x1 = triangles[base + 3];
++        const float y1 = triangles[base + 4];
++        const float z1 = triangles[base + 5];
++
++        const float x2 = triangles[base + 6];
++        const float y2 = triangles[base + 7];
++        const float z2 = triangles[base + 8];
++
++        const float xmin = fmin(x0, fmin(x1, x2));
++        const float xmax = fmax(x0, fmax(x1, x2));
++
++        const float ymin = fmin(y0, fmin(y1, y2));
++        const float ymax = fmax(y0, fmax(y1, y2));
++
++        const float zmin = fmin(z0, fmin(z1, z2));
++        const float zmax = fmax(z0, fmax(z1, z2));
++
++        if (x < xmin - delta || x > xmax + delta || y < ymin - delta || y > ymax + delta || z < zmin - delta ||
++            z > zmax + delta)
++            continue;
++
++        const float ax = x1 - x0;
++        const float ay = y1 - y0;
++        const float az = z1 - z0;
++
++        const float bx = x2 - x0;
++        const float by = y2 - y0;
++        const float bz = z2 - z0;
++
++        float nx = ay * bz - az * by;
++        float ny = az * bx - ax * bz;
++        float nz = ax * by - ay * bx;
++
++        const float length = sqrt(nx * nx + ny * ny + nz * nz);
++
++        if (length == 0.0f)
++            continue;
++
++        const float distance = fabs(nx * (x - x0) + ny * (y - y0) + nz * (z - z0));
++
++        if (distance > delta * 0.87f * length)
++            continue;
++
++        // A nearby plane and AABB do not establish proximity to the triangle.
++        const float3 a = (float3)(x0, y0, z0);
++        const float3 b = (float3)(x1, y1, z1);
++        const float3 c = (float3)(x2, y2, z2);
++        const float3 point = (float3)(x, y, z);
++        const float3 ab = b - a;
++        const float3 ac = c - a;
++        const float3 ap = point - a;
++        const float aa = dot(ab, ab);
++        const float bb = dot(ab, ac);
++        const float cc = dot(ac, ac);
++        const float denominator = aa * cc - bb * bb;
++        const float u = denominator > 0.0f
++                            ? (cc * dot(ap, ab) - bb * dot(ap, ac)) / denominator
++                            : -1.0f;
++        const float v = denominator > 0.0f
++                            ? (aa * dot(ap, ac) - bb * dot(ap, ab)) / denominator
++                            : -1.0f;
++        if (u < 0.0f || v < 0.0f || u + v > 1.0f) {
++            const float edge_distance = fmin(segment_distance_squared(point, a, b),
++                                             fmin(segment_distance_squared(point, b, c),
++                                                  segment_distance_squared(point, c, a)));
++            if (edge_distance > delta * delta * 0.87f * 0.87f)
++                continue;
++        }
++
++        // Surface voxel.
++        const int index = (i * size_y + j) * size_z + k;
++
++        mask[index] = 1;
++
++        // Normalize outward triangle normal.
++        nx /= length;
++        ny /= length;
++        nz /= length;
++
++        // Move one voxel inward.
++        int ii = i;
++        int jj = j;
++        int kk = k;
++
++        const float anx = fabs(nx);
++        const float any_ = fabs(ny);
++        const float anz = fabs(nz);
++
++        if (anx >= any_ && anx >= anz) {
++            if (nx > 0.0f)
++                ii -= 1;
++            else
++                ii += 1;
++        } else if (any_ >= anz) {
++            if (ny > 0.0f)
++                jj -= 1;
++            else
++                jj += 1;
++        } else {
++            if (nz > 0.0f)
++                kk -= 1;
++            else
++                kk += 1;
++        }
++
++        if (ii >= 0 && ii < size_x && jj >= 0 && jj < size_y && kk >= 0 && kk < size_z) {
++            const int inward_index = (ii * size_y + jj) * size_z + kk;
++
++            mask[inward_index] = 1;
++        }
++
++        return;
++    }
++}
 diff --git a/blender_manifest.toml b/blender_manifest.toml
-index 874d6d4..7db33aa 100644
+index 874d6d4..fc8ee17 100644
 --- a/blender_manifest.toml
 +++ b/blender_manifest.toml
 @@ -1,31 +1,31 @@
@@ -421,7 +711,7 @@ index 874d6d4..7db33aa 100644
 +schema_version = "1.0.0"
 +
 +id = "continuum_flow"
-+version = "0.4.2"
++version = "0.4.3"
 +name = "Continuum Flow - VirtualAuto"
 +tagline = "Smoke and fire simulator"
 +maintainer = "VirtualAuto; upstream: Lutz Rohlfing"

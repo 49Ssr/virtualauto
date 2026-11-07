@@ -2,7 +2,8 @@
 
 The local variant fixes Blender workflow problems in Continuum Flow 0.4.0 Alpha.
 Upstream labels it an alpha pre-release; this variant retains that experimental status.
-Its existing nodes, saved node identifiers and numerical kernels are retained.
+Its existing nodes and saved node identifiers are retained. The fluid-solve and
+combustion kernels are unchanged; the surface voxelizer is corrected below.
 This is not yet a validated replacement for a production car-fire setup.
 
 ## Source and files
@@ -18,7 +19,7 @@ This is not yet a validated replacement for a production car-fire setup.
 Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 `build/continuum-flow/` and `dist/`. They are not copied into tracked source.
 
-## Changes in 0.4.2 VirtualAuto
+## Changes in 0.4.3 VirtualAuto
 
 1. Reuse OpenCL preview staging buffers while their capacity is sufficient.
    They can grow and remain at peak capacity until the job ends. This reduces
@@ -40,6 +41,13 @@ Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 6. Load the VDB through Blender's data API, preserving mode and selection.
    The Output node's native **Material** picker assigns the same chosen
    material on each bake, including after Free Bake.
+7. Reject voxel cells beyond the actual triangle's surface tolerance. Upstream
+   marked cells near its plane anywhere in its bounding box, including points
+   well outside the triangle. This could overfill collision/source masks.
+   GPU checks cover an interior point, a nearby edge, a distant exterior point,
+   reversed winding and a degenerate triangle.
+8. Skip timeline sampling when a control has no animation. Constant physics,
+   source and force settings no longer trigger redundant scene-frame updates.
 
 No new panels, scene handlers, automatic materials or scene-conversion logic
 were added. Installing this variant does not convert a Mantaflow setup.
@@ -54,7 +62,7 @@ virtualauto continuum check --blender "C:\path\to\blender.exe"
 ```
 
 The build fetches the pinned source and Windows CPython 3.13 wheels, applies
-the patch, and writes `dist/continuum_flow-0.4.2-virtualauto-windows-x64.zip`.
+the patch, and writes `dist/continuum_flow-0.4.3-virtualauto-windows-x64.zip`.
 The check runs factory Blender with an original small emitter; it does not
 open a user's scene or enable an add-on in their preferences. Its result is
 `build/continuum-flow/verification.json`.
@@ -62,7 +70,9 @@ open a user's scene or enable an add-on in their preferences. Its result is
 For Blender 5.2.3, install the ZIP through Preferences → Extensions →
 Install from Disk. It uses the upstream `continuum_flow` extension ID, so it
 replaces the ordinary installation rather than registering duplicate nodes.
-Stop active Continuum jobs and restart Blender before changing installations.
+Save the scene and stop active Continuum jobs before updating the extension.
+Blender may request a restart when compiled dependency wheels change; their
+versions are unchanged in this variant.
 
 ## Validation on 2026-11-07
 
@@ -74,12 +84,22 @@ Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 | Existing Viewer appearance properties while job marked active | Current preview values updated |
 | Evaluated subdivision mesh exported from Pose Mode | Triangles match; source vertices/UVs, selection and mode unchanged; no temporary scene objects |
 | VDB loaded from Pose Mode with the chosen material | Material assigned; mode and selection unchanged |
-| Cycles image with VDB versus the same image without it | Nonzero pixel difference (mean absolute RGBA difference approximately 0.036 at 64 x 64) |
+| Triangle voxelization on the GPU | Upstream incorrectly marks the distant exterior cell; corrected kernel rejects it and retains the surface/edge cells |
+| Unanimated Source controls | Zero scene-frame updates during animation export |
+| Cycles image with VDB versus the same image without it | Nonzero pixel difference (mean absolute RGBA difference approximately 0.029 at 64 x 64) |
 | Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately one second with compiled kernels cached |
 | Requested start frame 41 | File 1 loads at 41, file 2 at 42, file 7 at 47 |
 | Small warmed worker cancellation | Approximately 0.015 seconds in this fixture |
 | Blender extension archive validator | Passed |
 | Actual ZIP installed and enabled in a fresh Blender profile | Passed; 5090 detected through bundled dependencies |
+
+In the local stationary-car scene, seven mesh emitters and one closed box
+collision proxy produced 120 frames at 0.06 m cell size in **18.94 seconds**,
+including geometry export, simulation, VDB writing and loading. The 120 VDBs
+occupied approximately 223 MiB. A five-second 640 x 360 camera preview at
+12 fps showed flames at the hood and cabin openings with downwind smoke.
+The maximum domain was 12 x 40 x 20 m with adaptive bounds. The project and
+its assets are private and are not included as a reproducible benchmark.
 
 These results do not establish large-domain speed, real-time playback,
 long-bake stability, physical accuracy or equivalence to Fumaris. First-use

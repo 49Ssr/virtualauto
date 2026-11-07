@@ -59,6 +59,44 @@ def check_pose_export(work, geometry_export):
     return rig
 
 
+def check_triangle_voxelization(work, context, queue, voxelizer):
+    import numpy as np
+    import pyopencl as cl
+
+    triangle = np.array([[[0, 0, 0], [1, 0, 0], [0, 1, 0]]], dtype=np.float32)
+    reports = {}
+    for name in ("baseline", "candidate"):
+        source = (work / name / "Solver/Kernel/OpenCL/voxelise_mesh.cl").read_text()
+        program = cl.Program(context, source).build(options=["-cl-fast-relaxed-math"])
+        kernel = program.surface
+        grid = voxelizer.voxelize_triangles(context, queue, kernel, triangle, 0.1)
+        values = np.empty(grid["shape"], dtype=np.uint8)
+        cl.enqueue_copy(queue, values, grid["mask"]).wait()
+        samples = {}
+        for label, point in (
+            ("inside", (0.2, 0.2, 0)),
+            ("outside_triangle", (0.9, 0.9, 0)),
+            ("near_edge", (0.5, 0.55, 0)),
+        ):
+            index = tuple(np.rint((np.array(point) - grid["origin"]) / 0.1).astype(int))
+            samples[label] = int(values[index])
+        assert samples["inside"] == samples["near_edge"] == 1
+        assert samples["outside_triangle"] == (1 if name == "baseline" else 0)
+        reports[name] = samples
+        if name == "candidate":
+            for points, expected_nonempty in (
+                (triangle[:, ::-1, :].copy(), True),
+                (np.zeros_like(triangle), False),
+            ):
+                other = voxelizer.voxelize_triangles(
+                    context, queue, kernel, points, 0.1
+                )
+                result = np.empty(other["shape"], dtype=np.uint8)
+                cl.enqueue_copy(queue, result, other["mask"]).wait()
+                assert bool(result.any()) == expected_nonempty
+    return reports
+
+
 def smoke_material():
     material = bpy.data.materials.new("VDB visibility check")
     material.use_nodes = True
@@ -156,6 +194,7 @@ def run(work):
     geometry_export = importlib.import_module(
         prefix + ".Internal.Core.export.export_geometry"
     )
+    voxelizer = importlib.import_module(prefix + ".Solver.Kernel.voxelise_mesh")
     main = importlib.import_module(prefix + ".Solver.General.main").main
     devices = status.refresh_opencl_devices()["GPU"]
     assert devices, "No OpenCL GPU found"
@@ -169,6 +208,9 @@ def run(work):
         device_type=cl.device_type.GPU
     )[device_info["device_index"]]
     context = cl.Context([device])
+    voxelization_check = check_triangle_voxelization(
+        work, context, cl.CommandQueue(context), voxelizer
+    )
     preview_spec = importlib.util.spec_from_file_location(
         "va_cf_preview_test", Path(__file__).with_name("preview_check.py")
     )
@@ -238,6 +280,18 @@ def run(work):
     assert abs(renderer.flame_color[0] - 0.7) < 1e-6
     status.bake_running = False
     viewer.live_preview = False
+
+    sampled_frames = []
+
+    def record_frame(scene, _depsgraph=None):
+        sampled_frames.append(scene.frame_current)
+
+    bpy.app.handlers.frame_change_post.append(record_frame)
+    try:
+        constant_animation = export.build_animations(types["source"], 41, 47)
+    finally:
+        bpy.app.handlers.frame_change_post.remove(record_frame)
+    assert constant_animation == ({}, {}) and not sampled_frames
 
     config = export.build_config_dict(context=bpy.context, simulation_node=simulation)
     assert config["simulation"]["sources"][0]["smoke"]["value"] > 0
@@ -367,6 +421,8 @@ def run(work):
         "material_assignment_verified": True,
         "rendered_volume_pixel_difference": render_difference,
         "preview_buffers": buffer_check,
+        "triangle_voxelization": voxelization_check,
+        "constant_controls_frame_updates": len(sampled_frames),
         "cancel_seconds": cancel_seconds,
         "worker_heartbeat_ticks": heartbeat,
         "scope": (
