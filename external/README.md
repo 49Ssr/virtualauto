@@ -29,6 +29,8 @@ A submodule pin establishes source provenance, not functional validation.
 
 ## Records
 
+- [Continuum Flow development build](ContinuumFlow.md): Blender fixes, build
+  command, measured checks and the unresolved native-writer source boundary.
 - [DriveClubFS](DriveClubFS.md)
 - [PkgToolBox](PkgToolBox.md)
 - [ShadPKG](ShadPKG.md)

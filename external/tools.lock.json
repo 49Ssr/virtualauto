@@ -1,9 +1,21 @@
 {
   "$schema": "../lab/schemas/external-tool.schema.json",
   "schema_version": "1.1.0",
-  "verified_at": "2026-07-20",
+  "verified_at": "2026-11-07",
   "integration_policy": "mixed",
   "tools": [
+    {
+      "id": "EXT-CONTINUUM-FLOW",
+      "repository": "lutzr2000/Continuum_Flow",
+      "default_branch": "main",
+      "commit": "30eb4728cbc2749fb26161b25fc5bd49ff2f8366",
+      "verified_at": "2026-11-07",
+      "record_path": "external/ContinuumFlow.md",
+      "license_status": "declared-with-anomaly",
+      "integration_status": "record-only",
+      "submodule_path": null,
+      "notes": "GPL-3.0-or-later source, fetched on demand for a patched local build; source is not vendored. The custom native VDB-writer wheel has no licence/source link in its metadata; public binary redistribution is not cleared. See the record for executed GPU and Blender checks."
+    },
     {
       "id": "EXT-DRIVECLUBFS",
       "repository": "Nenkai/DriveClubFS",

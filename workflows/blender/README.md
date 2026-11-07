@@ -7,6 +7,8 @@ diagnostics, performance assumptions, and validation status.
 - [`addon/virtualauto_blender/`](addon/virtualauto_blender/) contains the first
   artist-facing development add-on.
 - [`scripts/`](scripts/README.md) contains Blender-hosted headless entrypoints.
+- [Continuum Flow variant](../../external/ContinuumFlow.md) contains the small
+  source patch, repeatable Windows package build and Blender/OpenCL checks.
 - [`mcp/`](mcp/README.md) pins and operates the official live Blender bridge.
 - [Verified Blender 5.0.1 Windows toolchain record](toolchains/BLD-BLENDER-501-WINDOWS-X64.json)
 

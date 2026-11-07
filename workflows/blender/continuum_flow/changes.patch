@@ -1,0 +1,146 @@
+diff --git a/Internal/Core/load_result.py b/Internal/Core/load_result.py
+index 190019f..c81d374 100644
+--- a/Internal/Core/load_result.py
++++ b/Internal/Core/load_result.py
+@@ -60,14 +60,16 @@ class VDBResultManager:
+ 
+         volume.filepath = str(first_vdb)
+         volume.is_sequence = True
+-        volume.frame_start = 1
++        volume.frame_start = self.start_frame_index
+         volume.frame_offset = 0
+-        volume.frame_duration = self.start_frame_index + len(ordered_vdbs)
++        first_frame_index = self.get_frame_index(first_vdb)
++        last_frame_index = self.get_frame_index(ordered_vdbs[-1])
++        volume.frame_duration = last_frame_index - first_frame_index + 1
+         volume.sequence_mode = "CLIP"
+ 
+-        last_frame_index = self.get_frame_index(ordered_vdbs[-1])
+-        if last_frame_index is not None:
+-            bpy.context.scene.frame_set(last_frame_index)
++        bpy.context.scene.frame_set(
++            self.start_frame_index + last_frame_index - first_frame_index
++        )
+ 
+     def load_volume_data(self, filepath):
+         bpy.ops.object.volume_import(filepath=str(filepath))
+diff --git a/Internal/UI/node_viewer.py b/Internal/UI/node_viewer.py
+index de0a2c8..8d31f14 100644
+--- a/Internal/UI/node_viewer.py
++++ b/Internal/UI/node_viewer.py
+@@ -1,10 +1,17 @@
+ from . import sockets
+ from . import node_base
+ from ..Core import viewer
++from ..Core import volume_renderer
++from ..Core.solver import solver_status
+ from ..Core.solver.solver_manager import solver_manager
+ from bpy.props import BoolProperty, FloatProperty, FloatVectorProperty
+ 
+ 
++def _update_appearance(self, context):
++    volume_renderer.load_viewer_settings()
++    volume_renderer.redraw_viewports()
++
++
+ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+     """
+     Node used as a lightweight endpoint for inspecting simulation results.
+@@ -18,10 +25,10 @@ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+     bl_width_max = 520.0
+     domain_preview_active: BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})  # type: ignore
+     live_preview: BoolProperty(name="Live Preview", default=True, description="Show a preview of the simulation, slows down the simulation", options=set())  # type: ignore
+-    preview_smoke_density: FloatProperty(name="Smoke Density", default=2.0, min=0.0, options=set())  # type: ignore
+-    preview_smoke_color: FloatVectorProperty(name="Smoke Color", default=(0.32, 0.34, 0.38), size=3, min=0.0, max=1.0, subtype="COLOR", options=set())  # type: ignore
+-    preview_flame_density: FloatProperty(name="Flame Density", default=5.0, min=0.0, options=set())  # type: ignore
+-    preview_flame_color: FloatVectorProperty(name="Flame Color", default=(1.0, 0.12, 0.01), size=3, min=0.0, max=1.0, subtype="COLOR", options=set())  # type: ignore
++    preview_smoke_density: FloatProperty(name="Smoke Density", default=2.0, min=0.0, options=set(), update=_update_appearance)  # type: ignore
++    preview_smoke_color: FloatVectorProperty(name="Smoke Color", default=(0.32, 0.34, 0.38), size=3, min=0.0, max=1.0, subtype="COLOR", options=set(), update=_update_appearance)  # type: ignore
++    preview_flame_density: FloatProperty(name="Flame Density", default=5.0, min=0.0, options=set(), update=_update_appearance)  # type: ignore
++    preview_flame_color: FloatVectorProperty(name="Flame Color", default=(1.0, 0.12, 0.01), size=3, min=0.0, max=1.0, subtype="COLOR", options=set(), update=_update_appearance)  # type: ignore
+ 
+     def _sync_node(self):
+         self._ensure_socket(
+@@ -33,8 +40,6 @@ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+         viewer.disable_domain_preview()
+ 
+     def draw_buttons(self, context, layout):
+-        self._set_layout_enabled(context, layout)
+-
+         is_domain_preview_active = viewer.viewer_domain_preview_enabled(self)
+ 
+         col = layout.column(align=True)
+@@ -47,7 +52,9 @@ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+ 
+         col.separator()
+         col.label(text="Preview")
+-        col.prop(self, "live_preview")
++        live_toggle = col.row()
++        live_toggle.enabled = not solver_status.bake_running
++        live_toggle.prop(self, "live_preview")
+ 
+         col.separator()
+         col.prop(self, "preview_smoke_density")
+diff --git a/Solver/Kernel/preview.py b/Solver/Kernel/preview.py
+index fffc23d..d45c698 100644
+--- a/Solver/Kernel/preview.py
++++ b/Solver/Kernel/preview.py
+@@ -62,14 +62,12 @@ def atlas_shape(active_count):
+ def ensure_capacity(context, active_count, tile_size):
+     global fields_buffer, counter_buffer, capacity
+ 
+-    if capacity == active_count:
+-        return
+-
+     atlas_cell_count = math.prod(atlas_shape(active_count)) * tile_size**3
+-    fields_buffer = cl.Buffer(
+-        context, cl.mem_flags.READ_WRITE, max(1, atlas_cell_count * 2 * 4)
+-    )
+-    counter_buffer = cl.Buffer(context, cl.mem_flags.READ_WRITE, 4)
++    required_bytes = max(1, atlas_cell_count * 2 * 4)
++    if fields_buffer is None or fields_buffer.size < required_bytes:
++        fields_buffer = cl.Buffer(context, cl.mem_flags.READ_WRITE, required_bytes)
++    if counter_buffer is None:
++        counter_buffer = cl.Buffer(context, cl.mem_flags.READ_WRITE, 4)
+     capacity = active_count
+ 
+ 
+diff --git a/Solver/Kernel/solver.py b/Solver/Kernel/solver.py
+index 2690adb..e9dd7dd 100644
+--- a/Solver/Kernel/solver.py
++++ b/Solver/Kernel/solver.py
+@@ -702,6 +702,7 @@ def solver(config: dict):
+     print("Start time iteration")
+     next_output_time = 0.0
+     output_index = 0
++    output_frame_count = math.floor(t_max / output_time_step + 1e-9) + 1
+     time_step_count = 0
+ 
+     while t < t_max:
+@@ -1631,7 +1632,7 @@ def solver(config: dict):
+         time_step_count += 1
+ 
+         # ------------Output-------------------
+-        while t >= next_output_time:
++        while output_index < output_frame_count and t >= next_output_time:
+             output_index += 1
+             next_output_time += output_time_step
+ 
+diff --git a/blender_manifest.toml b/blender_manifest.toml
+index 874d6d4..769edd6 100644
+--- a/blender_manifest.toml
++++ b/blender_manifest.toml
+@@ -1,10 +1,10 @@
+ schema_version = "1.0.0"
+ 
+ id = "continuum_flow"
+-version = "0.4.0"
+-name = "Continuum Flow"
++version = "0.4.1"
++name = "Continuum Flow - VirtualAuto"
+ tagline = "Smoke and fire simulator"
+-maintainer = "Lutz Rohlfing"
++maintainer = "VirtualAuto; upstream: Lutz Rohlfing"
+ type = "add-on"
+ 
+ website = "https://lutzr2000.github.io/Continuum_Flow/"
