@@ -1,105 +1,124 @@
 # VirtualAuto
 
-An evidence-driven automotive Blender and asset-archaeology laboratory.
+Blender tools and practical research for automotive materials, rendering and
+game-asset reconstruction.
 
-VirtualAuto connects source provenance, semantic recovery, physically grounded
-materials, environments, Blender implementation, and retained validation
-evidence. It does not contain proprietary DriveClub packages or extracted game
-assets.
+VirtualAuto brings the reusable parts of our vehicle and environment work into
+one place: material references, Blender diagnostics, camera tools, extraction
+utilities and a modified Continuum Flow build. The aim is an editable scene and
+a convincing render, with clear controls and a manageable cost.
 
-## Repository map
+## Start with the job
 
-| Area | Use it for |
-| --- | --- |
-| [`research/`](research/README.md) | Automotive materials, geometry, environment, project records, and the authoritative R&D master |
-| [`workflows/`](workflows/README.md) | DriveClub extraction, Blender operation, and environment qualification procedures |
-| [`lab/`](lab/README.md) | Experiments, evidence, schemas, examples, and governance |
-| [`external/`](external/README.md) | Audited and pinned third-party research instruments |
-| [`dev/`](dev/README.md) | Repository maintenance scripts and tests |
-| [`src/virtualauto/`](src/virtualauto/) | VirtualAuto's guarded command-line implementation |
+| I want to… | Start here | What is available |
+| --- | --- | --- |
+| Simulate fire and smoke on the GPU | [Continuum Flow](external/ContinuumFlow.md) | Patched Windows add-on build, installation instructions and actual Blender/OpenCL checks |
+| Connect to an open Blender scene | [Blender MCP](workflows/blender/mcp/README.md) | Connector setup and live-operation workflow |
+| Inspect a mesh or imported vehicle | [Blender tools](workflows/blender/README.md) | Read-only inventory script and development sidebar add-on |
+| Work on paint, glass, carbon, metal or lamps | [Material reference](research/automotive_materials/README.md) | Automotive material research and searchable source sections |
+| Check camera and compositor settings | [Camera scripts](workflows/blender/scripts/README.md) | Camera-state audit, Lensfun map generation and compositor coordinate checks |
+| Build the environment around a car | [Environment workflow](workflows/environment/README.md) | Lighting, sky, atmosphere, ground and reflection guidance |
+| Investigate DriveClub assets | [DriveClub runbook](workflows/driveclub/RUNBOOK.md) | Package inspection, filesystem tools and the F40 research status |
 
-The full ownership rules are documented in the
-[repository architecture](lab/governance/REPOSITORY_ARCHITECTURE.md).
+## Continuum Flow development build
 
-## Current baseline
+The VirtualAuto variant is based on **Continuum Flow 0.4.0 Alpha** and keeps
+its existing nodes and solver. It fixes preview-buffer reallocation, allows
+appearance adjustments during a bake,
+aligns VDB sequences with the requested timeline start and bounds the number of
+exported frames. Version **0.4.3** also exports from Pose Mode without changing
+selection, loads results without leaving that mode, and retains the material
+chosen on the Output node across bakes.
+It corrects false surface voxels outside triangles and avoids resampling the
+timeline for controls that have no animation.
 
-- Reproduced headless baseline: Blender `5.0.1`
-- Interactive live-control target: Blender `5.2.0 LTS`
-- First archaeology target: DriveClub Ferrari F40
-- Pinned operational extractor: DriveClubFS
-- Environment research: sky, atmosphere, aerosols, HDRI, roads, terrain,
-  weather, surface state, built context, camera boundaries, and an initial
-  schema-backed profile contract; no environment profile is yet claimed
-  production-qualified
-- Repository state: guarded extraction, deterministic research retrieval, a
-  Blender asset-audit panel, and the first accepted coordinate-math invariant;
-  no claim of completed DriveClub model conversion or production material
+```text
+virtualauto continuum build
+virtualauto continuum check --blender "C:\path\to\blender.exe"
+```
 
-Live Blender control is documented in the
-[MCP runbook](workflows/blender/mcp/README.md). Its official upstream connector
-is pinned and installed separately; the repository does not pretend its weak
-execution sandbox is a security boundary.
+The Windows ZIP has been installed and tested in Blender **5.2.3 LTS** on an
+**RTX 5090 Laptop GPU**. See the [build record](external/ContinuumFlow.md) for
+the measured results and installation steps. These are small simulation checks,
+not a benchmark against other solvers or a production car-fire qualification.
+Installing the add-on does not convert an existing Mantaflow scene.
 
-The exact Automotive Body R&D v5 master is preserved at
-[Automotive_Body_RnD_Master.md](research/automotive_materials/Automotive_Body_RnD_Master.md).
-Its generated [heading index](research/indexes/automotive_master.index.json) is
-only a retrieval aid and never replaces the master.
+The source patch is available here. A public binary release is pending the
+upstream native VDB writer's source and redistribution details.
 
-The first-class [environment domain](research/environment/README.md) separates
-far-field radiance, direct emitters, participating media, roads and terrain,
-weather, finite reflection structure, and camera/display ownership. Its
-[operating workflow](workflows/environment/README.md) starts with controlled
-F40 windshield and paint diagnostics rather than a beauty-scene preset.
+## Install the command-line tools
 
-Retrieve focused, checksum-bound sections without deleting history:
+Use Python **3.12 or newer** from a checkout of this repository:
+
+```text
+python -m pip install -e .
+virtualauto --help
+virtualauto doctor
+```
+
+Blender is needed for Blender operations; it is not required to read the
+research or run the ordinary repository tools. Set `VIRTUALAUTO_BLENDER` to
+your Blender executable when using the structural Blender test. That original
+test targets 5.0.1 and checks scene structure; it is not a smoke/fluid simulation.
+Compatibility is recorded per workflow rather than treating one Blender
+version as proof that every tool works.
+
+For material research, retrieve the relevant section instead of reading the
+whole master:
 
 ```text
 virtualauto research find weave --prefix ABR-COMP
 virtualauto research get ABR-COMP-010
 ```
 
-## DriveClub quick start
+DriveClub extraction additionally uses Git submodules and .NET 9. Follow its
+runbook for those dependencies and the private asset workspace.
+
+## Where the project stands
+
+- **Blender:** inventory, camera/compositor diagnostics and the Continuum
+  development build are executable tools. Their individual records state what
+  was tested. The sidebar add-on currently provides mesh inventory, not a
+  complete vehicle or material editor.
+- **NFS Rivals:** material, glass, lamp and wet-road work has been developed in
+  individual scenes. The older local project branch still needs consolidation
+  before those scripts can be presented here as reusable tools.
+- **DriveClub:** package and filesystem inspection are implemented. F40
+  source reconstruction is still research; see the [project status](research/projects/driveclub_f40/STATUS.md).
+  Its private Blender camera work and earlier 5.0.1 tests remain dated records,
+  not a blanket compatibility claim for the current tools.
+- **Materials and environments:** the references support scene decisions;
+  they are not a collection of finished, automatically calibrated presets.
+
+Blender work should preserve source meshes and UVs, use plainly labelled native
+controls, and be checked in the intended shot. Add groups, helpers and extra
+geometry when they solve a concrete problem.
+
+## Repository map
+
+| Folder | Contents |
+| --- | --- |
+| [research/](research/README.md) | Materials, rendering, environments, source-format research and project records |
+| [workflows/](workflows/README.md) | Blender scripts, add-on source and practical operating instructions |
+| [src/virtualauto/](src/virtualauto/) | Command-line tools and build orchestration |
+| [external/](external/README.md) | Third-party tool versions, patches, build instructions and licences |
+| [dev/](dev/README.md) | Tests and repository maintenance |
+| [lab/](lab/README.md) | Experiments, schemas and supporting records |
+
+Generated installers and build files go in ignored `dist/` and `build/`
+directories. Private models, textures, game packages, scenes and caches stay
+outside the published source.
+
+## Development
 
 ```text
-git submodule update --init --recursive
-python -m pip install -e .
-virtualauto doctor
-virtualauto driveclub build
-virtualauto workspace init D:\VirtualAutoWorkspace --run-id dc-f40-001
-virtualauto pkg inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\pkg\input
-virtualauto driveclub inspect --input D:\VirtualAutoWorkspace\runs\dc-f40-001\driveclubfs\input
-virtualauto pkg --help
-virtualauto driveclub --help
-```
-
-The private run workspace contract and exact operating sequence are in the
-[DriveClub runbook](workflows/driveclub/RUNBOOK.md). Package access or extraction
-does not by itself provide a Blender-ready vehicle; mesh, material, and semantic
-recovery remain separate research stages.
-
-## Validate the repository
-
-```text
-virtualauto build-index
 virtualauto validate
 python -m unittest discover -s dev/tests -v
 ```
 
-A clean result proves structural consistency, link integrity, schema validity,
-pin consistency, and restricted-asset boundaries. It does not prove a physical
-model or reverse-engineered interpretation is correct.
+The repository checks cover links, manifests and code behaviour. Visual quality
+and material accuracy still require Blender tests and judgement.
 
-## Operating principles
-
-- Evidence, observation, interpretation, implementation, and validation remain
-  distinct states.
-- Unknown source data is preserved before interpretation.
-- External tools are pinned instruments, not trusted black boxes.
-- The authoritative master is append-only in spirit and checksum guarded.
-- Private or copyrighted source assets stay outside Git.
-- Every complex Blender solution must expose diagnostics and failure conditions.
-- Evidence hashing and record metadata are automated; observations and claims
-  remain deliberate human or instrument interpretations.
-
-Start with the [project doctrine](lab/governance/PROJECT_DOCTRINE.md) before
-changing research or implementation records.
+See [contributing](CONTRIBUTING.md) and [licensing](lab/governance/LICENSING_STATUS.md)
+for changes and reuse. Third-party components retain their own licences;
+VirtualAuto has not selected a repository-wide open-source licence.

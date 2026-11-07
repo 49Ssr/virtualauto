@@ -51,6 +51,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     subcommands.add_parser("build-index", help="regenerate the canonical master index")
 
+    continuum = subcommands.add_parser(
+        "continuum", help="build and check the Continuum Flow variant"
+    )
+    continuum_commands = continuum.add_subparsers(
+        dest="continuum_command", required=True
+    )
+    continuum_commands.add_parser(
+        "build", help="build the Windows Blender 5.1+ add-on ZIP"
+    )
+    continuum_check = continuum_commands.add_parser(
+        "check", help="run isolated Blender and GPU checks"
+    )
+    continuum_check.add_argument("--blender", required=True)
+
     doctor = subcommands.add_parser("doctor", help="inspect local prerequisites")
     doctor.add_argument("--strict", action="store_true")
 
@@ -205,6 +219,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root = repository_root()
+    if args.command == "continuum":
+        from . import continuum
+
+        if args.continuum_command == "build":
+            print(continuum.build(root))
+            return 0
+        return continuum.check(root, args.blender)
     if args.command == "validate":
         return run_repository_script(
             root, "validate_repository.py", strict=not args.non_strict

@@ -5,6 +5,14 @@ the owner selects and commits one, default copyright applies and public access
 must not be interpreted as permission to copy, modify, or redistribute the
 repository.
 
+The Continuum Flow patch and Blender verification helpers under
+`workflows/blender/continuum_flow/` are explicitly GPL-3.0-or-later. Their
+upstream declaration and native-wheel source uncertainty are recorded in
+[ContinuumFlow.md](../../external/ContinuumFlow.md). The original CLI build
+orchestration does not import the solver and retains VirtualAuto's existing
+licensing status. This component-specific declaration does not relicense the
+rest of the repository or clear a public binary release.
+
 External tools retain their upstream licences. Referenced papers, OEM material,
 community research, game data, supplied models, textures, and extracted assets
 remain governed by their respective rights holders and are not relicensed by

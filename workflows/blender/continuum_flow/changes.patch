@@ -1,0 +1,741 @@
+diff --git a/Internal/Core/load_result.py b/Internal/Core/load_result.py
+index 190019f..4db636b 100644
+--- a/Internal/Core/load_result.py
++++ b/Internal/Core/load_result.py
+@@ -23,11 +23,12 @@ class VDBResultManager:
+         self.loaded_output_directory = None
+         self.start_frame_index = 1
+ 
+-    def load_bake(self, watch_dir, start_frame_index=1, simulation_node=None):
++    def load_bake(self, watch_dir, start_frame_index=1, simulation_node=None, material=None):
+         self.watch_dir = Path(watch_dir).resolve()
+         self.volume_object = None
+         self.loaded_output_directory = None
+         self.start_frame_index = int(start_frame_index)
++        self.material = material
+         self.reference_object = reference_frame.linked_reference_object(simulation_node)
+         ordered_vdbs = self.ordered_vdbs()
+         if ordered_vdbs:
+@@ -60,18 +61,24 @@ class VDBResultManager:
+ 
+         volume.filepath = str(first_vdb)
+         volume.is_sequence = True
+-        volume.frame_start = 1
++        volume.frame_start = self.start_frame_index
+         volume.frame_offset = 0
+-        volume.frame_duration = self.start_frame_index + len(ordered_vdbs)
++        first_frame_index = self.get_frame_index(first_vdb)
++        last_frame_index = self.get_frame_index(ordered_vdbs[-1])
++        volume.frame_duration = last_frame_index - first_frame_index + 1
+         volume.sequence_mode = "CLIP"
+ 
+-        last_frame_index = self.get_frame_index(ordered_vdbs[-1])
+-        if last_frame_index is not None:
+-            bpy.context.scene.frame_set(last_frame_index)
++        bpy.context.scene.frame_set(
++            self.start_frame_index + last_frame_index - first_frame_index
++        )
+ 
+     def load_volume_data(self, filepath):
+-        bpy.ops.object.volume_import(filepath=str(filepath))
+-        self.volume_object = bpy.context.object
++        volume_data = bpy.data.volumes.new("Continuum Flow")
++        volume_data.filepath = str(filepath)
++        self.volume_object = bpy.data.objects.new("Continuum Flow", volume_data)
++        bpy.context.scene.collection.objects.link(self.volume_object)
++        if self.material is not None:
++            volume_data.materials.append(self.material)
+ 
+         volume_object = self.volume_object
+ 
+diff --git a/Internal/Core/baking.py b/Internal/Core/baking.py
+index d6c5a94..61587ae 100644
+--- a/Internal/Core/baking.py
++++ b/Internal/Core/baking.py
+@@ -238,6 +238,7 @@ class CONTINUUM_FLOW_OT_bake(bpy.types.Operator):
+                     self.output_directory,
+                     start_frame_index=self.start_frame,
+                     simulation_node=self.simulation_node,
++                    material=self.output_node.volume_material,
+                 )
+ 
+             if self.bake_directory is not None:
+diff --git a/Internal/Core/export/export_config.py b/Internal/Core/export/export_config.py
+index 596ee5b..5c1db9f 100644
+--- a/Internal/Core/export/export_config.py
++++ b/Internal/Core/export/export_config.py
+@@ -102,33 +102,32 @@ def set_subdirectory_paths(config_dict, bake_directory):
+ 
+ 
+ def export_geomtry_stls(config_dict, export_directory):
++    """Export the starting evaluated shape; object transforms animate separately."""
+     geometry_dir = Path(export_directory) / "geometry"
+     geometry_dir.mkdir(parents=True, exist_ok=True)
+-
+-    depsgraph = bpy.context.evaluated_depsgraph_get()
+     simulation = config_dict["simulation"]
+-
++    scene = bpy.context.scene
++    current_frame = scene.frame_current
++    start_frame = int(simulation["settings"]["start_frame"])
+     seen = set()
+ 
+-    for group_name in ("sources", "obstacles"):
+-        for entry in simulation.get(group_name, []):
+-            for geometry_input in entry.get("geometry_inputs", []):
+-                object_name = geometry_input.get("object_name")
+-
+-                if not object_name or object_name in seen:
+-                    continue
+-
+-                seen.add(object_name)
+-
+-                source_object = bpy.data.objects.get(object_name)
+-                if source_object is None:
+-                    continue
+-
+-                export_geometry.export_object_as_local_stl(
+-                    source_object,
+-                    geometry_dir,
+-                    depsgraph=depsgraph,
+-                )
++    try:
++        scene.frame_set(start_frame)
++        depsgraph = bpy.context.evaluated_depsgraph_get()
++        for group_name in ("sources", "obstacles"):
++            for entry in simulation.get(group_name, []):
++                for geometry_input in entry.get("geometry_inputs", []):
++                    object_name = geometry_input.get("object_name")
++                    if not object_name or object_name in seen:
++                        continue
++                    seen.add(object_name)
++                    source_object = bpy.data.objects.get(object_name)
++                    if source_object is not None:
++                        export_geometry.export_object_as_local_stl(
++                            source_object, geometry_dir, depsgraph=depsgraph,
++                        )
++    finally:
++        scene.frame_set(current_frame)
+ 
+ 
+ def export_particle_system_npzs(config_dict, export_directory):
+@@ -843,6 +842,8 @@ def build_animations(node, start_frame, end_frame):
+     sampled = {
+         name: [] for name in property_names if node_property_is_animated(node, name)
+     }
++    if not sampled:
++        return {}, {}
+-
++
+     try:
+         for frame in range(start_frame, end_frame):
+diff --git a/Internal/Core/export/export_geometry.py b/Internal/Core/export/export_geometry.py
+index da1395b..36cd481 100644
+--- a/Internal/Core/export/export_geometry.py
++++ b/Internal/Core/export/export_geometry.py
+@@ -1,108 +1,30 @@
+-from pathlib import Path
+-import contextlib
+-import io
+-import os
+-import bpy
+-
+-
+-@contextlib.contextmanager
+-def suppress_process_output():
+-    """
+-    Suppress Python- and C-level stdout/stderr during Blender operator calls.
+-    """
+-    saved_stdout = os.dup(1)
+-    saved_stderr = os.dup(2)
+-    devnull_fd = os.open(os.devnull, os.O_WRONLY)
++"""Export evaluated object-local triangles without changing Blender context."""
+ 
+-    try:
+-        os.dup2(devnull_fd, 1)
+-        os.dup2(devnull_fd, 2)
+-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+-            io.StringIO()
+-        ):
+-            yield
+-    finally:
+-        os.dup2(saved_stdout, 1)
+-        os.dup2(saved_stderr, 2)
+-        os.close(saved_stdout)
+-        os.close(saved_stderr)
+-        os.close(devnull_fd)
++from pathlib import Path
++import struct
+ 
+ 
+ def export_object_as_local_stl(source_object, target_dir, depsgraph):
+     target_dir = Path(target_dir)
+     target_dir.mkdir(parents=True, exist_ok=True)
+-
+     file_path = target_dir / f"{source_object.name}.stl"
+-
+-    temp_object = None
+-    temp_mesh = None
+-    active_object = getattr(bpy.context.view_layer.objects, "active", None)
+-    selected_objects = list(getattr(bpy.context, "selected_objects", ()))
+-    scene_collection = getattr(getattr(bpy.context, "scene", None), "collection", None)
++    object_eval = source_object.evaluated_get(depsgraph)
++    mesh = object_eval.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)
++    if mesh is None:
++        raise ValueError(f"{source_object.name} has no mesh geometry")
+ 
+     try:
+-        temp_object, temp_mesh = mesh_to_temp_object(
+-            source_object,
+-            depsgraph,
+-        )
+-        scene_collection.objects.link(temp_object)
+-
+-        bpy.ops.object.select_all(action="DESELECT")
+-        temp_object.select_set(True)
+-        bpy.context.view_layer.objects.active = temp_object
+-
+-        with suppress_process_output():
+-            bpy.ops.wm.stl_export(
+-                filepath=str(file_path),
+-                export_selected_objects=True,
+-                apply_modifiers=False,
+-                ascii_format=False,
+-            )
+-
++        mesh.calc_loop_triangles()
++        record = struct.Struct("<12fH")
++        with file_path.open("wb") as output:
++            output.write(b"Continuum Flow evaluated local geometry".ljust(80, b"\0"))
++            output.write(struct.pack("<I", len(mesh.loop_triangles)))
++            for triangle in mesh.loop_triangles:
++                coordinates = [
++                    component
++                    for index in triangle.vertices
++                    for component in mesh.vertices[index].co
++                ]
++                output.write(record.pack(*triangle.normal, *coordinates, 0))
+     finally:
+-        bpy.ops.object.select_all(action="DESELECT")
+-
+-        if temp_object is not None:
+-            try:
+-                if temp_object.name in bpy.data.objects:
+-                    bpy.data.objects.remove(temp_object, do_unlink=True)
+-            except Exception:
+-                pass
+-
+-        if temp_mesh is not None:
+-            try:
+-                if temp_mesh.name in bpy.data.meshes:
+-                    bpy.data.meshes.remove(temp_mesh, do_unlink=True)
+-            except Exception:
+-                pass
+-
+-        for selected_object in selected_objects:
+-            try:
+-                if selected_object.name in bpy.data.objects:
+-                    selected_object.select_set(True)
+-            except Exception:
+-                pass
+-
+-        try:
+-            bpy.context.view_layer.objects.active = active_object
+-        except Exception:
+-            pass
+-
+-
+-def mesh_to_temp_object(source_object, depsgraph):
+-    """
+-    Build one temporary mesh object from the evaluated object state.
+-    """
+-    object_eval = source_object.evaluated_get(depsgraph)
+-    temp_mesh = bpy.data.meshes.new_from_object(
+-        object_eval,
+-        depsgraph=depsgraph,
+-        preserve_all_data_layers=False,
+-    )
+-    temp_object = bpy.data.objects.new(
+-        f"__continuum_flow_export__{source_object.name}",
+-        temp_mesh,
+-    )
+-    temp_object.matrix_world.identity()
+-    return temp_object, temp_mesh
++        object_eval.to_mesh_clear()
+diff --git a/Internal/UI/node_output.py b/Internal/UI/node_output.py
+index 07326b1..93ed077 100644
+--- a/Internal/UI/node_output.py
++++ b/Internal/UI/node_output.py
+@@ -10,6 +10,7 @@ from bpy.props import IntProperty
+ from bpy.props import EnumProperty
+ from bpy.props import BoolProperty
+ from bpy.props import StringProperty
++from bpy.props import PointerProperty
+ 
+ INVALID_OUTPUT_PATH_MESSAGE = "Bake disabled: invalid output path"
+ 
+@@ -120,6 +121,7 @@ class ContinuumFlowOutputNode(node_base.ContinuumFlowBaseNode):
+     flame_field_name: StringProperty(name="Field Name", default="flame", options=set())  # type: ignore
+     output_path: StringProperty(name="Path", default="", subtype="DIR_PATH", options=set())  # type: ignore
+     last_bake_directory: StringProperty(default="", options={"HIDDEN"})  # type: ignore
++    volume_material: PointerProperty(name="Material", type=bpy.types.Material, description="Material assigned to the baked volume")  # type: ignore
+ 
+     def _ensure_input_socket(self):
+         socket = self.inputs.get("Result")
+@@ -216,6 +218,7 @@ class ContinuumFlowOutputNode(node_base.ContinuumFlowBaseNode):
+         layout.separator()
+ 
+         layout.prop(self, "output_path")
++        layout.prop(self, "volume_material")
+ 
+         layout.separator()
+ 
+diff --git a/Internal/UI/node_viewer.py b/Internal/UI/node_viewer.py
+index de0a2c8..8d31f14 100644
+--- a/Internal/UI/node_viewer.py
++++ b/Internal/UI/node_viewer.py
+@@ -1,10 +1,17 @@
+ from . import sockets
+ from . import node_base
+ from ..Core import viewer
++from ..Core import volume_renderer
++from ..Core.solver import solver_status
+ from ..Core.solver.solver_manager import solver_manager
+ from bpy.props import BoolProperty, FloatProperty, FloatVectorProperty
+ 
+ 
++def _update_appearance(self, context):
++    volume_renderer.load_viewer_settings()
++    volume_renderer.redraw_viewports()
++
++
+ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+     """
+     Node used as a lightweight endpoint for inspecting simulation results.
+@@ -18,10 +25,10 @@ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+     bl_width_max = 520.0
+     domain_preview_active: BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})  # type: ignore
+     live_preview: BoolProperty(name="Live Preview", default=True, description="Show a preview of the simulation, slows down the simulation", options=set())  # type: ignore
+-    preview_smoke_density: FloatProperty(name="Smoke Density", default=2.0, min=0.0, options=set())  # type: ignore
+-    preview_smoke_color: FloatVectorProperty(name="Smoke Color", default=(0.32, 0.34, 0.38), size=3, min=0.0, max=1.0, subtype="COLOR", options=set())  # type: ignore
+-    preview_flame_density: FloatProperty(name="Flame Density", default=5.0, min=0.0, options=set())  # type: ignore
+-    preview_flame_color: FloatVectorProperty(name="Flame Color", default=(1.0, 0.12, 0.01), size=3, min=0.0, max=1.0, subtype="COLOR", options=set())  # type: ignore
++    preview_smoke_density: FloatProperty(name="Smoke Density", default=2.0, min=0.0, options=set(), update=_update_appearance)  # type: ignore
++    preview_smoke_color: FloatVectorProperty(name="Smoke Color", default=(0.32, 0.34, 0.38), size=3, min=0.0, max=1.0, subtype="COLOR", options=set(), update=_update_appearance)  # type: ignore
++    preview_flame_density: FloatProperty(name="Flame Density", default=5.0, min=0.0, options=set(), update=_update_appearance)  # type: ignore
++    preview_flame_color: FloatVectorProperty(name="Flame Color", default=(1.0, 0.12, 0.01), size=3, min=0.0, max=1.0, subtype="COLOR", options=set(), update=_update_appearance)  # type: ignore
+ 
+     def _sync_node(self):
+         self._ensure_socket(
+@@ -33,8 +40,6 @@ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+         viewer.disable_domain_preview()
+ 
+     def draw_buttons(self, context, layout):
+-        self._set_layout_enabled(context, layout)
+-
+         is_domain_preview_active = viewer.viewer_domain_preview_enabled(self)
+ 
+         col = layout.column(align=True)
+@@ -47,7 +52,9 @@ class ContinuumFlowViewerNode(node_base.ContinuumFlowBaseNode):
+ 
+         col.separator()
+         col.label(text="Preview")
+-        col.prop(self, "live_preview")
++        live_toggle = col.row()
++        live_toggle.enabled = not solver_status.bake_running
++        live_toggle.prop(self, "live_preview")
+ 
+         col.separator()
+         col.prop(self, "preview_smoke_density")
+diff --git a/Solver/Kernel/preview.py b/Solver/Kernel/preview.py
+index fffc23d..d45c698 100644
+--- a/Solver/Kernel/preview.py
++++ b/Solver/Kernel/preview.py
+@@ -62,14 +62,12 @@ def atlas_shape(active_count):
+ def ensure_capacity(context, active_count, tile_size):
+     global fields_buffer, counter_buffer, capacity
+ 
+-    if capacity == active_count:
+-        return
+-
+     atlas_cell_count = math.prod(atlas_shape(active_count)) * tile_size**3
+-    fields_buffer = cl.Buffer(
+-        context, cl.mem_flags.READ_WRITE, max(1, atlas_cell_count * 2 * 4)
+-    )
+-    counter_buffer = cl.Buffer(context, cl.mem_flags.READ_WRITE, 4)
++    required_bytes = max(1, atlas_cell_count * 2 * 4)
++    if fields_buffer is None or fields_buffer.size < required_bytes:
++        fields_buffer = cl.Buffer(context, cl.mem_flags.READ_WRITE, required_bytes)
++    if counter_buffer is None:
++        counter_buffer = cl.Buffer(context, cl.mem_flags.READ_WRITE, 4)
+     capacity = active_count
+ 
+ 
+diff --git a/Solver/Kernel/solver.py b/Solver/Kernel/solver.py
+index 2690adb..e9dd7dd 100644
+--- a/Solver/Kernel/solver.py
++++ b/Solver/Kernel/solver.py
+@@ -702,6 +702,7 @@ def solver(config: dict):
+     print("Start time iteration")
+     next_output_time = 0.0
+     output_index = 0
++    output_frame_count = math.floor(t_max / output_time_step + 1e-9) + 1
+     time_step_count = 0
+ 
+     while t < t_max:
+@@ -1631,7 +1632,7 @@ def solver(config: dict):
+         time_step_count += 1
+ 
+         # ------------Output-------------------
+-        while t >= next_output_time:
++        while output_index < output_frame_count and t >= next_output_time:
+             output_index += 1
+             next_output_time += output_time_step
+ 
+diff --git a/Solver/Kernel/OpenCL/voxelise_mesh.cl b/Solver/Kernel/OpenCL/voxelise_mesh.cl
+index fec13cc..2df3aa8 100644
+--- a/Solver/Kernel/OpenCL/voxelise_mesh.cl
++++ b/Solver/Kernel/OpenCL/voxelise_mesh.cl
+@@ -1,119 +1,155 @@
+-__kernel void surface(__global const float *triangles,
+-                      __global uchar *mask,
+-                      const int triangle_count,
+-                      const int size_x,
+-                      const int size_y,
+-                      const int size_z,
+-                      const float delta,
+-                      const float ox,
+-                      const float oy,
+-                      const float oz) {
+-    /*
+-    Voxelise a meshes surface
+-    */
+-    const int i = get_global_id(0);
+-    const int j = get_global_id(1);
+-    const int k = get_global_id(2);
+-
+-    if (i >= size_x || j >= size_y || k >= size_z)
+-        return;
+-
+-    const float x = ox + (float)i * delta;
+-    const float y = oy + (float)j * delta;
+-    const float z = oz + (float)k * delta;
+-
+-    for (int t = 0; t < triangle_count; ++t) {
+-        const int base = t * 9;
+-
+-        const float x0 = triangles[base + 0];
+-        const float y0 = triangles[base + 1];
+-        const float z0 = triangles[base + 2];
+-
+-        const float x1 = triangles[base + 3];
+-        const float y1 = triangles[base + 4];
+-        const float z1 = triangles[base + 5];
+-
+-        const float x2 = triangles[base + 6];
+-        const float y2 = triangles[base + 7];
+-        const float z2 = triangles[base + 8];
+-
+-        const float xmin = fmin(x0, fmin(x1, x2));
+-        const float xmax = fmax(x0, fmax(x1, x2));
+-
+-        const float ymin = fmin(y0, fmin(y1, y2));
+-        const float ymax = fmax(y0, fmax(y1, y2));
+-
+-        const float zmin = fmin(z0, fmin(z1, z2));
+-        const float zmax = fmax(z0, fmax(z1, z2));
+-
+-        if (x < xmin - delta || x > xmax + delta || y < ymin - delta || y > ymax + delta || z < zmin - delta ||
+-            z > zmax + delta)
+-            continue;
+-
+-        const float ax = x1 - x0;
+-        const float ay = y1 - y0;
+-        const float az = z1 - z0;
+-
+-        const float bx = x2 - x0;
+-        const float by = y2 - y0;
+-        const float bz = z2 - z0;
+-
+-        float nx = ay * bz - az * by;
+-        float ny = az * bx - ax * bz;
+-        float nz = ax * by - ay * bx;
+-
+-        const float length = sqrt(nx * nx + ny * ny + nz * nz);
+-
+-        if (length == 0.0f)
+-            continue;
+-
+-        const float distance = fabs(nx * (x - x0) + ny * (y - y0) + nz * (z - z0));
+-
+-        if (distance > delta * 0.87f * length)
+-            continue;
+-
+-        // Surface voxel.
+-        const int index = (i * size_y + j) * size_z + k;
+-
+-        mask[index] = 1;
+-
+-        // Normalize outward triangle normal.
+-        nx /= length;
+-        ny /= length;
+-        nz /= length;
+-
+-        // Move one voxel inward.
+-        int ii = i;
+-        int jj = j;
+-        int kk = k;
+-
+-        const float anx = fabs(nx);
+-        const float any_ = fabs(ny);
+-        const float anz = fabs(nz);
+-
+-        if (anx >= any_ && anx >= anz) {
+-            if (nx > 0.0f)
+-                ii -= 1;
+-            else
+-                ii += 1;
+-        } else if (any_ >= anz) {
+-            if (ny > 0.0f)
+-                jj -= 1;
+-            else
+-                jj += 1;
+-        } else {
+-            if (nz > 0.0f)
+-                kk -= 1;
+-            else
+-                kk += 1;
+-        }
+-
+-        if (ii >= 0 && ii < size_x && jj >= 0 && jj < size_y && kk >= 0 && kk < size_z) {
+-            const int inward_index = (ii * size_y + jj) * size_z + kk;
+-
+-            mask[inward_index] = 1;
+-        }
+-
+-        return;
+-    }
+-}
+\ No newline at end of file
++inline float segment_distance_squared(const float3 p, const float3 a, const float3 b) {
++    const float3 edge = b - a;
++    const float length_squared = dot(edge, edge);
++    const float t = length_squared > 0.0f
++                        ? clamp(dot(p - a, edge) / length_squared, 0.0f, 1.0f)
++                        : 0.0f;
++    const float3 offset = p - (a + t * edge);
++    return dot(offset, offset);
++}
++
++__kernel void surface(__global const float *triangles,
++                      __global uchar *mask,
++                      const int triangle_count,
++                      const int size_x,
++                      const int size_y,
++                      const int size_z,
++                      const float delta,
++                      const float ox,
++                      const float oy,
++                      const float oz) {
++    /*
++    Voxelise a meshes surface
++    */
++    const int i = get_global_id(0);
++    const int j = get_global_id(1);
++    const int k = get_global_id(2);
++
++    if (i >= size_x || j >= size_y || k >= size_z)
++        return;
++
++    const float x = ox + (float)i * delta;
++    const float y = oy + (float)j * delta;
++    const float z = oz + (float)k * delta;
++
++    for (int t = 0; t < triangle_count; ++t) {
++        const int base = t * 9;
++
++        const float x0 = triangles[base + 0];
++        const float y0 = triangles[base + 1];
++        const float z0 = triangles[base + 2];
++
++        const float x1 = triangles[base + 3];
++        const float y1 = triangles[base + 4];
++        const float z1 = triangles[base + 5];
++
++        const float x2 = triangles[base + 6];
++        const float y2 = triangles[base + 7];
++        const float z2 = triangles[base + 8];
++
++        const float xmin = fmin(x0, fmin(x1, x2));
++        const float xmax = fmax(x0, fmax(x1, x2));
++
++        const float ymin = fmin(y0, fmin(y1, y2));
++        const float ymax = fmax(y0, fmax(y1, y2));
++
++        const float zmin = fmin(z0, fmin(z1, z2));
++        const float zmax = fmax(z0, fmax(z1, z2));
++
++        if (x < xmin - delta || x > xmax + delta || y < ymin - delta || y > ymax + delta || z < zmin - delta ||
++            z > zmax + delta)
++            continue;
++
++        const float ax = x1 - x0;
++        const float ay = y1 - y0;
++        const float az = z1 - z0;
++
++        const float bx = x2 - x0;
++        const float by = y2 - y0;
++        const float bz = z2 - z0;
++
++        float nx = ay * bz - az * by;
++        float ny = az * bx - ax * bz;
++        float nz = ax * by - ay * bx;
++
++        const float length = sqrt(nx * nx + ny * ny + nz * nz);
++
++        if (length == 0.0f)
++            continue;
++
++        const float distance = fabs(nx * (x - x0) + ny * (y - y0) + nz * (z - z0));
++
++        if (distance > delta * 0.87f * length)
++            continue;
++
++        // A nearby plane and AABB do not establish proximity to the triangle.
++        const float3 a = (float3)(x0, y0, z0);
++        const float3 b = (float3)(x1, y1, z1);
++        const float3 c = (float3)(x2, y2, z2);
++        const float3 point = (float3)(x, y, z);
++        const float3 ab = b - a;
++        const float3 ac = c - a;
++        const float3 ap = point - a;
++        const float aa = dot(ab, ab);
++        const float bb = dot(ab, ac);
++        const float cc = dot(ac, ac);
++        const float denominator = aa * cc - bb * bb;
++        const float u = denominator > 0.0f
++                            ? (cc * dot(ap, ab) - bb * dot(ap, ac)) / denominator
++                            : -1.0f;
++        const float v = denominator > 0.0f
++                            ? (aa * dot(ap, ac) - bb * dot(ap, ab)) / denominator
++                            : -1.0f;
++        if (u < 0.0f || v < 0.0f || u + v > 1.0f) {
++            const float edge_distance = fmin(segment_distance_squared(point, a, b),
++                                             fmin(segment_distance_squared(point, b, c),
++                                                  segment_distance_squared(point, c, a)));
++            if (edge_distance > delta * delta * 0.87f * 0.87f)
++                continue;
++        }
++
++        // Surface voxel.
++        const int index = (i * size_y + j) * size_z + k;
++
++        mask[index] = 1;
++
++        // Normalize outward triangle normal.
++        nx /= length;
++        ny /= length;
++        nz /= length;
++
++        // Move one voxel inward.
++        int ii = i;
++        int jj = j;
++        int kk = k;
++
++        const float anx = fabs(nx);
++        const float any_ = fabs(ny);
++        const float anz = fabs(nz);
++
++        if (anx >= any_ && anx >= anz) {
++            if (nx > 0.0f)
++                ii -= 1;
++            else
++                ii += 1;
++        } else if (any_ >= anz) {
++            if (ny > 0.0f)
++                jj -= 1;
++            else
++                jj += 1;
++        } else {
++            if (nz > 0.0f)
++                kk -= 1;
++            else
++                kk += 1;
++        }
++
++        if (ii >= 0 && ii < size_x && jj >= 0 && jj < size_y && kk >= 0 && kk < size_z) {
++            const int inward_index = (ii * size_y + jj) * size_z + kk;
++
++            mask[inward_index] = 1;
++        }
++
++        return;
++    }
++}
+diff --git a/blender_manifest.toml b/blender_manifest.toml
+index 874d6d4..fc8ee17 100644
+--- a/blender_manifest.toml
++++ b/blender_manifest.toml
+@@ -1,31 +1,31 @@
+-schema_version = "1.0.0"
+-
+-id = "continuum_flow"
+-version = "0.4.0"
+-name = "Continuum Flow"
+-tagline = "Smoke and fire simulator"
+-maintainer = "Lutz Rohlfing"
+-type = "add-on"
+-
+-website = "https://lutzr2000.github.io/Continuum_Flow/"
+-tags = ["Physics"]
+-
+-blender_version_min = "5.1.0"
+-
+-platforms = ["windows-x64"]
+-
+-license = [
+-    "SPDX:GPL-3.0-or-later",
+-]
+-
+-wheels = [
+-    "./wheels/numpy-2.4.6-cp313-cp313-win_amd64.whl",
+-    "./wheels/trimesh-4.12.2-py3-none-any.whl",
+-    "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
+-    "./wheels/pytools-2026.1.1-py3-none-any.whl",
+-    "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
+-    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl"
+-]
+-
+-[permissions]
+-files = "Read and write simulation cache files"
++schema_version = "1.0.0"
++
++id = "continuum_flow"
++version = "0.4.3"
++name = "Continuum Flow - VirtualAuto"
++tagline = "Smoke and fire simulator"
++maintainer = "VirtualAuto; upstream: Lutz Rohlfing"
++type = "add-on"
++
++website = "https://lutzr2000.github.io/Continuum_Flow/"
++tags = ["Physics"]
++
++blender_version_min = "5.1.0"
++
++platforms = ["windows-x64"]
++
++license = [
++    "SPDX:GPL-3.0-or-later",
++]
++
++wheels = [
++    "./wheels/numpy-2.4.6-cp313-cp313-win_amd64.whl",
++    "./wheels/trimesh-4.12.2-py3-none-any.whl",
++    "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
++    "./wheels/pytools-2026.1.1-py3-none-any.whl",
++    "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
++    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl",
++]
++
++[permissions]
++files = "Read and write simulation cache files"
