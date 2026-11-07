@@ -18,7 +18,7 @@ This is not yet a validated replacement for a production car-fire setup.
 Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 `build/continuum-flow/` and `dist/`. They are not copied into tracked source.
 
-## Changes in 0.4.1 VirtualAuto
+## Changes in 0.4.2 VirtualAuto
 
 1. Reuse OpenCL preview staging buffers while their capacity is sufficient.
    They can grow and remain at peak capacity until the job ends. This reduces
@@ -32,9 +32,17 @@ Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 4. Stop exporting at the last sample within the requested duration. The small
    fixture previously wrote eight files for frames 41–47; it now writes seven.
    This bounds cache output; it does not redesign the solver's time stepping.
+5. Export evaluated local triangles directly, without selecting objects,
+   changing mode or creating temporary scene objects. The previous exporter
+   failed in Pose Mode and could leave a temporary object behind. The shape
+   snapshot now comes from the simulation's start frame, independent of the
+   frame the artist was viewing.
+6. Load the VDB through Blender's data API, preserving mode and selection.
+   The Output node's native **Material** picker assigns the same chosen
+   material on each bake, including after Free Bake.
 
-No new panels, scene handlers, materials or scene-conversion logic were added.
-Installing this variant does not convert a Mantaflow setup.
+No new panels, scene handlers, automatic materials or scene-conversion logic
+were added. Installing this variant does not convert a Mantaflow setup.
 
 ## Build and install
 
@@ -46,7 +54,7 @@ virtualauto continuum check --blender "C:\path\to\blender.exe"
 ```
 
 The build fetches the pinned source and Windows CPython 3.13 wheels, applies
-the patch, and writes `dist/continuum_flow-0.4.1-virtualauto-windows-x64.zip`.
+the patch, and writes `dist/continuum_flow-0.4.2-virtualauto-windows-x64.zip`.
 The check runs factory Blender with an original small emitter; it does not
 open a user's scene or enable an add-on in their preferences. Its result is
 `build/continuum-flow/verification.json`.
@@ -64,6 +72,9 @@ Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 | --- | --- |
 | Staging-buffer growth/shrinkage, same GPU readback | Field replacements 9 → 1; counter replacements 9 → 0 |
 | Existing Viewer appearance properties while job marked active | Current preview values updated |
+| Evaluated subdivision mesh exported from Pose Mode | Triangles match; source vertices/UVs, selection and mode unchanged; no temporary scene objects |
+| VDB loaded from Pose Mode with the chosen material | Material assigned; mode and selection unchanged |
+| Cycles image with VDB versus the same image without it | Nonzero pixel difference (mean absolute RGBA difference approximately 0.036 at 64 x 64) |
 | Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately one second with compiled kernels cached |
 | Requested start frame 41 | File 1 loads at 41, file 2 at 42, file 7 at 47 |
 | Small warmed worker cancellation | Approximately 0.015 seconds in this fixture |
@@ -75,6 +86,31 @@ long-bake stability, physical accuracy or equivalence to Fumaris. First-use
 kernel compilation was approximately five seconds in the initial small run.
 Blender 5.2 does not expose the proposed `GPUTexture.update` Python API; that
 approach was rejected before packaging.
+
+## Using existing emitters
+
+Reference each emitter object with a Geometry node and connect it to a Source
+node. Source controls set fuel, smoke, temperature and velocity. Geometry
+nodes feeding an Obstacle node provide collision surfaces. Mantaflow Flow,
+Effector and Domain modifier settings do not drive this solver; retain them
+disabled if you need to return to the old setup.
+
+Domain **Resolution** is a cell size in metres, not Mantaflow's resolution
+division count: a smaller value is finer and more expensive. The Reference
+Frame object's origin places the bottom centre of the domain. Leave enough
+space above and downwind; adaptive simulation stays within those bounds.
+
+The exporter evaluates modifiers once at the start frame, then samples object
+world transforms. It does **not** export a changing mesh on every frame. In
+particular, bone-deformed panels and collision surfaces do not continuously
+follow the rig. This remains an upstream limitation, not a supported feature
+of this variant.
+
+Choose a volume material on the Output node before baking. Density, flame and
+temperature grids need a shader as well as a completed cache. Use a small
+camera render to check their actual visibility: nonempty VDB grids alone do
+not establish a useful image. The fixture rendering check proves that exported
+smoke can be rendered; it does not qualify a particular fire shader or car shot.
 
 ## Licence and redistribution
 

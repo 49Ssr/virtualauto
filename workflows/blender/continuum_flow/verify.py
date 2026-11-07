@@ -6,12 +6,120 @@ import copy
 import importlib
 import importlib.util
 import json
+import struct
 import sys
 import time
 from pathlib import Path
 from zipfile import ZipFile
 
 import bpy
+from mathutils import Vector
+
+
+def check_pose_export(work, geometry_export):
+    bpy.ops.mesh.primitive_cube_add(location=(7, 8, 9))
+    source = bpy.context.object
+    source.hide_render = True
+    source.modifiers.new("Evaluated subdivision", "SUBSURF").levels = 1
+    original_vertices = len(source.data.vertices)
+    original_uvs = list(source.data.uv_layers.keys())
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = source.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    mesh.calc_loop_triangles()
+    expected = [
+        tuple(
+            component for index in tri.vertices for component in mesh.vertices[index].co
+        )
+        for tri in mesh.loop_triangles
+    ]
+    evaluated.to_mesh_clear()
+    bpy.ops.object.armature_add()
+    rig = bpy.context.object
+    bpy.ops.object.mode_set(mode="POSE")
+    selected = set(bpy.context.selected_objects)
+    counts = (len(bpy.data.objects), len(bpy.data.meshes))
+    geometry_export.export_object_as_local_stl(source, work / "pose-check", depsgraph)
+    raw = (work / "pose-check" / f"{source.name}.stl").read_bytes()
+    assert struct.unpack_from("<I", raw, 80)[0] == len(expected)
+    records = list(struct.iter_unpack("<12fH", raw[84:]))
+    assert len(records) == len(expected)
+    assert all(
+        abs(actual - target) < 1e-6
+        for record, triangle in zip(records, expected, strict=True)
+        for actual, target in zip(record[3:12], triangle, strict=True)
+    )
+    assert bpy.context.mode == "POSE"
+    assert bpy.context.object == rig
+    assert set(bpy.context.selected_objects) == selected
+    assert counts == (len(bpy.data.objects), len(bpy.data.meshes))
+    assert len(source.data.vertices) == original_vertices
+    assert list(source.data.uv_layers.keys()) == original_uvs
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return rig
+
+
+def smoke_material():
+    material = bpy.data.materials.new("VDB visibility check")
+    material.use_nodes = True
+    tree = material.node_tree
+    tree.nodes.clear()
+    info = tree.nodes.new("ShaderNodeVolumeInfo")
+    density = tree.nodes.new("ShaderNodeMath")
+    density.operation = "MULTIPLY"
+    density.inputs[1].default_value = 10.0
+    absorb = tree.nodes.new("ShaderNodeVolumeAbsorption")
+    absorb.inputs["Color"].default_value = (0.5, 0.05, 0.02, 1)
+    output = tree.nodes.new("ShaderNodeOutputMaterial")
+    tree.links.new(info.outputs["Density"], density.inputs[0])
+    tree.links.new(density.outputs[0], absorb.inputs["Density"])
+    tree.links.new(absorb.outputs[0], output.inputs["Volume"])
+    return material
+
+
+def check_visible_volume(work, volume_object):
+    scene = bpy.context.scene
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for obj in scene.objects:
+        if obj.type in {"MESH", "VOLUME"}:
+            obj.hide_render = obj != volume_object
+    camera_data = bpy.data.cameras.new("VDB test camera")
+    camera = bpy.data.objects.new(camera_data.name, camera_data)
+    scene.collection.objects.link(camera)
+    camera.location = (4, -6, 2)
+    camera.rotation_euler = (
+        (Vector((0, 0, 0.6)) - camera.location).to_track_quat("-Z", "Y").to_euler()
+    )
+    camera_data.type = "ORTHO"
+    camera_data.ortho_scale = 3.0
+    scene.camera = camera
+    scene.world.use_nodes = True
+    background = scene.world.node_tree.nodes.get("Background")
+    background.inputs["Color"].default_value = (1, 1, 1, 1)
+    background.inputs["Strength"].default_value = 1.0
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 4
+    scene.cycles.seed = 0
+    scene.render.resolution_x = 64
+    scene.render.resolution_y = 64
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.media_type = "IMAGE"
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.use_compositing = False
+    pixels = []
+    for visible in (True, False):
+        volume_object.hide_render = not visible
+        path = work / f"volume-visible-{visible}.png"
+        scene.render.filepath = str(path)
+        bpy.ops.render.render(write_still=True)
+        image = bpy.data.images.load(str(path), check_existing=False)
+        pixels.append(list(image.pixels))
+        bpy.data.images.remove(image)
+    difference = sum(abs(a - b) for a, b in zip(*pixels, strict=True)) / len(pixels[0])
+    assert difference > 0.0001, f"VDB did not change the rendered image: {difference}"
+    volume_object.hide_render = False
+    return difference
 
 
 def run(work):
@@ -45,6 +153,9 @@ def run(work):
     ).solver_manager
     loader = importlib.import_module(prefix + ".Internal.Core.load_result")
     animation_proxy = importlib.import_module(prefix + ".Internal.UI.animation_proxy")
+    geometry_export = importlib.import_module(
+        prefix + ".Internal.Core.export.export_geometry"
+    )
     main = importlib.import_module(prefix + ".Solver.General.main").main
     devices = status.refresh_opencl_devices()["GPU"]
     assert devices, "No OpenCL GPU found"
@@ -130,6 +241,7 @@ def run(work):
 
     config = export.build_config_dict(context=bpy.context, simulation_node=simulation)
     assert config["simulation"]["sources"][0]["smoke"]["value"] > 0
+    rig = check_pose_export(work, geometry_export)
     directory, config = export.export_config_dict(config)
     start = time.perf_counter()
     main(config)
@@ -148,8 +260,24 @@ def run(work):
     )
     assert baseline_result.volume_object.data.frame_start == 1
     baseline_timeline_start = baseline_result.volume_object.data.frame_start
+    material = smoke_material()
+    output.volume_material = material
+    bpy.context.view_layer.objects.active = rig
+    for obj in bpy.context.selected_objects:
+        obj.select_set(False)
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="POSE")
+    selection = set(bpy.context.selected_objects)
     result = loader.VDBResultManager()
-    result.load_bake(directory, start_frame_index=41, simulation_node=simulation)
+    result.load_bake(
+        directory,
+        start_frame_index=41,
+        simulation_node=simulation,
+        material=output.volume_material,
+    )
+    assert bpy.context.mode == "POSE" and bpy.context.object == rig
+    assert set(bpy.context.selected_objects) == selection
+    assert result.volume_object.data.materials[0] == material
     volume = result.volume_object.data
     assert volume.frame_start == 41
     assert volume.frame_duration == len(files)
@@ -179,13 +307,21 @@ def run(work):
         frame_paths.append([frame, path.name])
 
     zero_start = loader.VDBResultManager()
-    zero_start.load_bake(directory, start_frame_index=0, simulation_node=simulation)
+    zero_start.load_bake(
+        directory,
+        start_frame_index=0,
+        simulation_node=simulation,
+        material=output.volume_material,
+    )
+    assert zero_start.volume_object.data.materials[0] == material
     scene.frame_set(0)
     zero_volume = zero_start.volume_object.evaluated_get(
         bpy.context.evaluated_depsgraph_get()
     ).data
     zero_volume.grids.load()
     assert Path(zero_volume.grids.frame_filepath).name == files[0].name
+    scene.frame_set(47)
+    render_difference = check_visible_volume(work, result.volume_object)
 
     # Cancellation is measured on the real worker after warm-up, not mocked.
     cancelled = copy.deepcopy(config)
@@ -227,6 +363,9 @@ def run(work):
         "preview_appearance_updates": True,
         "baseline_timeline_start": baseline_timeline_start,
         "frame_zero_verified": True,
+        "pose_export_and_import_verified": True,
+        "material_assignment_verified": True,
+        "rendered_volume_pixel_difference": render_difference,
         "preview_buffers": buffer_check,
         "cancel_seconds": cancel_seconds,
         "worker_heartbeat_ticks": heartbeat,

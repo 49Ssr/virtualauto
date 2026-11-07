@@ -1,8 +1,22 @@
 diff --git a/Internal/Core/load_result.py b/Internal/Core/load_result.py
-index 190019f..c81d374 100644
+index 190019f..4db636b 100644
 --- a/Internal/Core/load_result.py
 +++ b/Internal/Core/load_result.py
-@@ -60,14 +60,16 @@ class VDBResultManager:
+@@ -23,11 +23,12 @@ class VDBResultManager:
+         self.loaded_output_directory = None
+         self.start_frame_index = 1
+ 
+-    def load_bake(self, watch_dir, start_frame_index=1, simulation_node=None):
++    def load_bake(self, watch_dir, start_frame_index=1, simulation_node=None, material=None):
+         self.watch_dir = Path(watch_dir).resolve()
+         self.volume_object = None
+         self.loaded_output_directory = None
+         self.start_frame_index = int(start_frame_index)
++        self.material = material
+         self.reference_object = reference_frame.linked_reference_object(simulation_node)
+         ordered_vdbs = self.ordered_vdbs()
+         if ordered_vdbs:
+@@ -60,18 +61,24 @@ class VDBResultManager:
  
          volume.filepath = str(first_vdb)
          volume.is_sequence = True
@@ -23,7 +37,249 @@ index 190019f..c81d374 100644
 +        )
  
      def load_volume_data(self, filepath):
-         bpy.ops.object.volume_import(filepath=str(filepath))
+-        bpy.ops.object.volume_import(filepath=str(filepath))
+-        self.volume_object = bpy.context.object
++        volume_data = bpy.data.volumes.new("Continuum Flow")
++        volume_data.filepath = str(filepath)
++        self.volume_object = bpy.data.objects.new("Continuum Flow", volume_data)
++        bpy.context.scene.collection.objects.link(self.volume_object)
++        if self.material is not None:
++            volume_data.materials.append(self.material)
+ 
+         volume_object = self.volume_object
+ 
+diff --git a/Internal/Core/baking.py b/Internal/Core/baking.py
+index d6c5a94..61587ae 100644
+--- a/Internal/Core/baking.py
++++ b/Internal/Core/baking.py
+@@ -238,6 +238,7 @@ class CONTINUUM_FLOW_OT_bake(bpy.types.Operator):
+                     self.output_directory,
+                     start_frame_index=self.start_frame,
+                     simulation_node=self.simulation_node,
++                    material=self.output_node.volume_material,
+                 )
+ 
+             if self.bake_directory is not None:
+diff --git a/Internal/Core/export/export_config.py b/Internal/Core/export/export_config.py
+index 596ee5b..79fcc12 100644
+--- a/Internal/Core/export/export_config.py
++++ b/Internal/Core/export/export_config.py
+@@ -102,33 +102,32 @@ def set_subdirectory_paths(config_dict, bake_directory):
+ 
+ 
+ def export_geomtry_stls(config_dict, export_directory):
++    """Export the starting evaluated shape; object transforms animate separately."""
+     geometry_dir = Path(export_directory) / "geometry"
+     geometry_dir.mkdir(parents=True, exist_ok=True)
+-
+-    depsgraph = bpy.context.evaluated_depsgraph_get()
+     simulation = config_dict["simulation"]
+-
++    scene = bpy.context.scene
++    current_frame = scene.frame_current
++    start_frame = int(simulation["settings"]["start_frame"])
+     seen = set()
+ 
+-    for group_name in ("sources", "obstacles"):
+-        for entry in simulation.get(group_name, []):
+-            for geometry_input in entry.get("geometry_inputs", []):
+-                object_name = geometry_input.get("object_name")
+-
+-                if not object_name or object_name in seen:
+-                    continue
+-
+-                seen.add(object_name)
+-
+-                source_object = bpy.data.objects.get(object_name)
+-                if source_object is None:
+-                    continue
+-
+-                export_geometry.export_object_as_local_stl(
+-                    source_object,
+-                    geometry_dir,
+-                    depsgraph=depsgraph,
+-                )
++    try:
++        scene.frame_set(start_frame)
++        depsgraph = bpy.context.evaluated_depsgraph_get()
++        for group_name in ("sources", "obstacles"):
++            for entry in simulation.get(group_name, []):
++                for geometry_input in entry.get("geometry_inputs", []):
++                    object_name = geometry_input.get("object_name")
++                    if not object_name or object_name in seen:
++                        continue
++                    seen.add(object_name)
++                    source_object = bpy.data.objects.get(object_name)
++                    if source_object is not None:
++                        export_geometry.export_object_as_local_stl(
++                            source_object, geometry_dir, depsgraph=depsgraph,
++                        )
++    finally:
++        scene.frame_set(current_frame)
+ 
+ 
+ def export_particle_system_npzs(config_dict, export_directory):
+diff --git a/Internal/Core/export/export_geometry.py b/Internal/Core/export/export_geometry.py
+index da1395b..36cd481 100644
+--- a/Internal/Core/export/export_geometry.py
++++ b/Internal/Core/export/export_geometry.py
+@@ -1,108 +1,30 @@
+-from pathlib import Path
+-import contextlib
+-import io
+-import os
+-import bpy
+-
+-
+-@contextlib.contextmanager
+-def suppress_process_output():
+-    """
+-    Suppress Python- and C-level stdout/stderr during Blender operator calls.
+-    """
+-    saved_stdout = os.dup(1)
+-    saved_stderr = os.dup(2)
+-    devnull_fd = os.open(os.devnull, os.O_WRONLY)
++"""Export evaluated object-local triangles without changing Blender context."""
+ 
+-    try:
+-        os.dup2(devnull_fd, 1)
+-        os.dup2(devnull_fd, 2)
+-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+-            io.StringIO()
+-        ):
+-            yield
+-    finally:
+-        os.dup2(saved_stdout, 1)
+-        os.dup2(saved_stderr, 2)
+-        os.close(saved_stdout)
+-        os.close(saved_stderr)
+-        os.close(devnull_fd)
++from pathlib import Path
++import struct
+ 
+ 
+ def export_object_as_local_stl(source_object, target_dir, depsgraph):
+     target_dir = Path(target_dir)
+     target_dir.mkdir(parents=True, exist_ok=True)
+-
+     file_path = target_dir / f"{source_object.name}.stl"
+-
+-    temp_object = None
+-    temp_mesh = None
+-    active_object = getattr(bpy.context.view_layer.objects, "active", None)
+-    selected_objects = list(getattr(bpy.context, "selected_objects", ()))
+-    scene_collection = getattr(getattr(bpy.context, "scene", None), "collection", None)
++    object_eval = source_object.evaluated_get(depsgraph)
++    mesh = object_eval.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)
++    if mesh is None:
++        raise ValueError(f"{source_object.name} has no mesh geometry")
+ 
+     try:
+-        temp_object, temp_mesh = mesh_to_temp_object(
+-            source_object,
+-            depsgraph,
+-        )
+-        scene_collection.objects.link(temp_object)
+-
+-        bpy.ops.object.select_all(action="DESELECT")
+-        temp_object.select_set(True)
+-        bpy.context.view_layer.objects.active = temp_object
+-
+-        with suppress_process_output():
+-            bpy.ops.wm.stl_export(
+-                filepath=str(file_path),
+-                export_selected_objects=True,
+-                apply_modifiers=False,
+-                ascii_format=False,
+-            )
+-
++        mesh.calc_loop_triangles()
++        record = struct.Struct("<12fH")
++        with file_path.open("wb") as output:
++            output.write(b"Continuum Flow evaluated local geometry".ljust(80, b"\0"))
++            output.write(struct.pack("<I", len(mesh.loop_triangles)))
++            for triangle in mesh.loop_triangles:
++                coordinates = [
++                    component
++                    for index in triangle.vertices
++                    for component in mesh.vertices[index].co
++                ]
++                output.write(record.pack(*triangle.normal, *coordinates, 0))
+     finally:
+-        bpy.ops.object.select_all(action="DESELECT")
+-
+-        if temp_object is not None:
+-            try:
+-                if temp_object.name in bpy.data.objects:
+-                    bpy.data.objects.remove(temp_object, do_unlink=True)
+-            except Exception:
+-                pass
+-
+-        if temp_mesh is not None:
+-            try:
+-                if temp_mesh.name in bpy.data.meshes:
+-                    bpy.data.meshes.remove(temp_mesh, do_unlink=True)
+-            except Exception:
+-                pass
+-
+-        for selected_object in selected_objects:
+-            try:
+-                if selected_object.name in bpy.data.objects:
+-                    selected_object.select_set(True)
+-            except Exception:
+-                pass
+-
+-        try:
+-            bpy.context.view_layer.objects.active = active_object
+-        except Exception:
+-            pass
+-
+-
+-def mesh_to_temp_object(source_object, depsgraph):
+-    """
+-    Build one temporary mesh object from the evaluated object state.
+-    """
+-    object_eval = source_object.evaluated_get(depsgraph)
+-    temp_mesh = bpy.data.meshes.new_from_object(
+-        object_eval,
+-        depsgraph=depsgraph,
+-        preserve_all_data_layers=False,
+-    )
+-    temp_object = bpy.data.objects.new(
+-        f"__continuum_flow_export__{source_object.name}",
+-        temp_mesh,
+-    )
+-    temp_object.matrix_world.identity()
+-    return temp_object, temp_mesh
++        object_eval.to_mesh_clear()
+diff --git a/Internal/UI/node_output.py b/Internal/UI/node_output.py
+index 07326b1..93ed077 100644
+--- a/Internal/UI/node_output.py
++++ b/Internal/UI/node_output.py
+@@ -10,6 +10,7 @@ from bpy.props import IntProperty
+ from bpy.props import EnumProperty
+ from bpy.props import BoolProperty
+ from bpy.props import StringProperty
++from bpy.props import PointerProperty
+ 
+ INVALID_OUTPUT_PATH_MESSAGE = "Bake disabled: invalid output path"
+ 
+@@ -120,6 +121,7 @@ class ContinuumFlowOutputNode(node_base.ContinuumFlowBaseNode):
+     flame_field_name: StringProperty(name="Field Name", default="flame", options=set())  # type: ignore
+     output_path: StringProperty(name="Path", default="", subtype="DIR_PATH", options=set())  # type: ignore
+     last_bake_directory: StringProperty(default="", options={"HIDDEN"})  # type: ignore
++    volume_material: PointerProperty(name="Material", type=bpy.types.Material, description="Material assigned to the baked volume")  # type: ignore
+ 
+     def _ensure_input_socket(self):
+         socket = self.inputs.get("Result")
+@@ -216,6 +218,7 @@ class ContinuumFlowOutputNode(node_base.ContinuumFlowBaseNode):
+         layout.separator()
+ 
+         layout.prop(self, "output_path")
++        layout.prop(self, "volume_material")
+ 
+         layout.separator()
+ 
 diff --git a/Internal/UI/node_viewer.py b/Internal/UI/node_viewer.py
 index de0a2c8..8d31f14 100644
 --- a/Internal/UI/node_viewer.py
@@ -127,20 +383,69 @@ index 2690adb..e9dd7dd 100644
              next_output_time += output_time_step
  
 diff --git a/blender_manifest.toml b/blender_manifest.toml
-index 874d6d4..769edd6 100644
+index 874d6d4..7db33aa 100644
 --- a/blender_manifest.toml
 +++ b/blender_manifest.toml
-@@ -1,10 +1,10 @@
- schema_version = "1.0.0"
- 
- id = "continuum_flow"
+@@ -1,31 +1,31 @@
+-schema_version = "1.0.0"
+-
+-id = "continuum_flow"
 -version = "0.4.0"
 -name = "Continuum Flow"
-+version = "0.4.1"
-+name = "Continuum Flow - VirtualAuto"
- tagline = "Smoke and fire simulator"
+-tagline = "Smoke and fire simulator"
 -maintainer = "Lutz Rohlfing"
+-type = "add-on"
+-
+-website = "https://lutzr2000.github.io/Continuum_Flow/"
+-tags = ["Physics"]
+-
+-blender_version_min = "5.1.0"
+-
+-platforms = ["windows-x64"]
+-
+-license = [
+-    "SPDX:GPL-3.0-or-later",
+-]
+-
+-wheels = [
+-    "./wheels/numpy-2.4.6-cp313-cp313-win_amd64.whl",
+-    "./wheels/trimesh-4.12.2-py3-none-any.whl",
+-    "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
+-    "./wheels/pytools-2026.1.1-py3-none-any.whl",
+-    "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
+-    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl"
+-]
+-
+-[permissions]
+-files = "Read and write simulation cache files"
++schema_version = "1.0.0"
++
++id = "continuum_flow"
++version = "0.4.2"
++name = "Continuum Flow - VirtualAuto"
++tagline = "Smoke and fire simulator"
 +maintainer = "VirtualAuto; upstream: Lutz Rohlfing"
- type = "add-on"
- 
- website = "https://lutzr2000.github.io/Continuum_Flow/"
++type = "add-on"
++
++website = "https://lutzr2000.github.io/Continuum_Flow/"
++tags = ["Physics"]
++
++blender_version_min = "5.1.0"
++
++platforms = ["windows-x64"]
++
++license = [
++    "SPDX:GPL-3.0-or-later",
++]
++
++wheels = [
++    "./wheels/numpy-2.4.6-cp313-cp313-win_amd64.whl",
++    "./wheels/trimesh-4.12.2-py3-none-any.whl",
++    "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
++    "./wheels/pytools-2026.1.1-py3-none-any.whl",
++    "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
++    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl",
++]
++
++[permissions]
++files = "Read and write simulation cache files"

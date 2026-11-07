@@ -5,6 +5,7 @@
 *.txt text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+workflows/blender/continuum_flow/changes.patch text eol=lf
 
 # The canonical master deliberately uses Markdown hard-break spaces and is
 # checksum-locked, so whitespace checks must not rewrite or reject them.

@@ -82,6 +82,7 @@ def build(root: Path) -> Path:
     )
     manifest_path = candidate / "blender_manifest.toml"
     manifest = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+    version = manifest["version"]
     wheels = work / "wheels"
     wheels.mkdir(parents=True, exist_ok=True)
     requirements = [
@@ -113,8 +114,8 @@ def build(root: Path) -> Path:
         check=True,
     )
     for requirement in EXTRA_REQUIREMENTS:
-        distribution, version = requirement.split("==")
-        wheel = next(wheels.glob(f"{distribution}-{version}-*.whl"))
+        distribution, dependency_version = requirement.split("==")
+        wheel = next(wheels.glob(f"{distribution}-{dependency_version}-*.whl"))
         manifest["wheels"].append(f"./wheels/{wheel.name}")
     text = manifest_path.read_text(encoding="utf-8")
     start = text.index("wheels = [")
@@ -138,13 +139,15 @@ def build(root: Path) -> Path:
         else:
             target.write_bytes((wheels / target.name).read_bytes())
     changes = (
-        "Continuum Flow - VirtualAuto 0.4.1\n"
+        f"Continuum Flow - VirtualAuto {version}\n"
         "Based on Lutz Rohlfing's Continuum Flow 0.4.0 at " + pin + ".\n"
         "Modified 2026-11-07 by VirtualAuto contributors, GPL-3.0-or-later.\n\n"
         "Changes: reuse OpenCL preview staging buffers; "
         "edit preview appearance during a bake; "
         "align VDB sequence playback with the requested start frame; "
-        "limit exported frames to the requested duration.\n"
+        "limit exported frames to the requested duration; "
+        "export evaluated meshes and load volumes without changing mode or selection; "
+        "retain the chosen output material across bakes.\n"
         "The numerical kernels and node identifiers are unchanged.\n"
         "Source changes and build instructions: "
         "VirtualAuto external/ContinuumFlow.md.\n"
@@ -153,7 +156,7 @@ def build(root: Path) -> Path:
         "for public redistribution.\n"
     )
     (candidate / "VIRTUALAUTO_CHANGES.txt").write_text(changes, encoding="utf-8")
-    archive = root / "dist/continuum_flow-0.4.1-virtualauto-windows-x64.zip"
+    archive = root / f"dist/continuum_flow-{version}-virtualauto-windows-x64.zip"
     archive.parent.mkdir(parents=True, exist_ok=True)
     files = paths + manifest["wheels"] + ["VIRTUALAUTO_CHANGES.txt"]
     with ZipFile(archive, "w", ZIP_DEFLATED) as package:
@@ -164,6 +167,9 @@ def build(root: Path) -> Path:
 
 def check(root: Path, blender: str) -> int:
     work = root / "build/continuum-flow"
+    version = tomllib.loads(
+        (work / "candidate/blender_manifest.toml").read_text(encoding="utf-8")
+    )["version"]
     environment = os.environ.copy()
     environment["BLENDER_USER_RESOURCES"] = str(work / "package-profile")
     result = subprocess.run(
@@ -198,7 +204,7 @@ def check(root: Path, blender: str) -> int:
             "--work",
             str(work),
             "--zip",
-            str(root / "dist/continuum_flow-0.4.1-virtualauto-windows-x64.zip"),
+            str(root / f"dist/continuum_flow-{version}-virtualauto-windows-x64.zip"),
         ],
         cwd=root,
         env=environment,
