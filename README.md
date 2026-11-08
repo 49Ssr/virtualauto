@@ -26,11 +26,13 @@ The VirtualAuto variant is based on **Continuum Flow 0.4.0 Alpha** and keeps
 its existing nodes and solver. It fixes preview-buffer reallocation, allows
 appearance adjustments during a bake,
 aligns VDB sequences with the requested timeline start and bounds the number of
-exported frames. Version **0.4.3** also exports from Pose Mode without changing
+exported frames. It also exports from Pose Mode without changing
 selection, loads results without leaving that mode, and retains the material
 chosen on the Output node across bakes.
 It corrects false surface voxels outside triangles and avoids resampling the
 timeline for controls that have no animation.
+Version **0.4.4** replaces the old diagonal, periodically fading turbulence
+with moving curl noise while keeping the existing turbulence controls.
 
 ```text
 virtualauto continuum build
