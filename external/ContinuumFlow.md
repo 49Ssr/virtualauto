@@ -2,8 +2,9 @@
 
 The local variant fixes Blender workflow problems in Continuum Flow 0.4.0 Alpha.
 Upstream labels it an alpha pre-release; this variant retains that experimental status.
-Its existing nodes and saved node identifiers are retained. The fluid-solve and
-combustion kernels are unchanged; the surface voxelizer is corrected below.
+Its existing nodes and saved node identifiers are retained. Pressure, advection
+and combustion kernels are unchanged. Surface voxelization and the turbulence
+force are corrected below.
 This is not yet a validated replacement for a production car-fire setup.
 
 ## Source and files
@@ -19,7 +20,7 @@ This is not yet a validated replacement for a production car-fire setup.
 Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 `build/continuum-flow/` and `dist/`. They are not copied into tracked source.
 
-## Changes in 0.4.3 VirtualAuto
+## Changes in 0.4.4 VirtualAuto
 
 1. Reuse OpenCL preview staging buffers while their capacity is sufficient.
    They can grow and remain at peak capacity until the job ends. This reduces
@@ -48,6 +49,14 @@ Upstream source, dependency wheels, caches and generated ZIPs live in ignored
    reversed winding and a degenerate triangle.
 8. Skip timeline sampling when a control has no animation. Constant physics,
    source and force settings no longer trigger redundant scene-frame updates.
+9. Replace the identical x/y/z turbulence force with the curl of three
+   decorrelated noise potentials. The field moves continuously through space
+   instead of multiplying a fixed pattern by a sine that periodically becomes
+   zero. Amplitude, Scale, Frequency and Seed remain the existing controls;
+   Frequency now controls movement through the noise field. This uses analytic
+   noise derivatives, with GPU checks against finite differences. The approach
+   follows [Bridson et al.'s curl-noise construction](https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph2007-curlnoise.pdf);
+   its boundary-aware potential modulation is not implemented here.
 
 No new panels, scene handlers, automatic materials or scene-conversion logic
 were added. Installing this variant does not convert a Mantaflow setup.
@@ -62,7 +71,7 @@ virtualauto continuum check --blender "C:\path\to\blender.exe"
 ```
 
 The build fetches the pinned source and Windows CPython 3.13 wheels, applies
-the patch, and writes `dist/continuum_flow-0.4.3-virtualauto-windows-x64.zip`.
+the patch, and writes `dist/continuum_flow-0.4.4-virtualauto-windows-x64.zip`.
 The check runs factory Blender with an original small emitter; it does not
 open a user's scene or enable an add-on in their preferences. Its result is
 `build/continuum-flow/verification.json`.
@@ -74,7 +83,7 @@ Save the scene and stop active Continuum jobs before updating the extension.
 Blender may request a restart when compiled dependency wheels change; their
 versions are unchanged in this variant.
 
-## Validation on 2026-11-07
+## Validation on 2026-11-08
 
 Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 
@@ -85,6 +94,8 @@ Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 | Evaluated subdivision mesh exported from Pose Mode | Triangles match; source vertices/UVs, selection and mode unchanged; no temporary scene objects |
 | VDB loaded from Pose Mode with the chosen material | Material assigned; mode and selection unchanged |
 | Triangle voxelization on the GPU | Upstream incorrectly marks the distant exterior cell; corrected kernel rejects it and retains the surface/edge cells |
+| Turbulence on the GPU | Axis correlations change from 1.0 to approximately 0.10, 0.06 and -0.06 in the sampled field; the field is nonzero at time zero, scales with amplitude and changes with seed/time |
+| Analytic noise gradient and curl | Maximum gradient error versus finite differences approximately 0.00036; sampled divergence RMS approximately 0.00034, versus 3.31 for the old diagonal force |
 | Unanimated Source controls | Zero scene-frame updates during animation export |
 | Cycles image with VDB versus the same image without it | Nonzero pixel difference (mean absolute RGBA difference approximately 0.029 at 64 x 64) |
 | Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately one second with compiled kernels cached |
@@ -125,6 +136,13 @@ world transforms. It does **not** export a changing mesh on every frame. In
 particular, bone-deformed panels and collision surfaces do not continuously
 follow the rig. This remains an upstream limitation, not a supported feature
 of this variant.
+
+For rigid moving panels, a separate low-detail collider driven by the panel's
+bone through an object constraint can use the supported object-transform
+animation. Keep the render mesh and its UVs intact. Check source/collider
+overlap at the chosen cell size: detailed engine/interior collision copies can
+block the emitters, and voxel thickness can close small openings. A single
+chassis box alone cannot stop smoke passing through the rest of the body.
 
 Choose a volume material on the Output node before baking. Density, flame and
 temperature grids need a shader as well as a completed cache. Use a small

@@ -711,7 +711,7 @@ index 874d6d4..fc8ee17 100644
 +schema_version = "1.0.0"
 +
 +id = "continuum_flow"
-+version = "0.4.3"
++version = "0.4.4"
 +name = "Continuum Flow - VirtualAuto"
 +tagline = "Smoke and fire simulator"
 +maintainer = "VirtualAuto; upstream: Lutz Rohlfing"
@@ -739,3 +739,102 @@ index 874d6d4..fc8ee17 100644
 +
 +[permissions]
 +files = "Read and write simulation cache files"
+diff --git a/Solver/General/forces.py b/Solver/General/forces.py
+--- a/Solver/General/forces.py
++++ b/Solver/General/forces.py
+@@ -1,5 +1,4 @@
+ from typing import Any
+-import math
+ 
+ import numpy as np
+ 
+@@ -130,7 +129,7 @@
+                 amplitude,
+                 node.get("scale", 1.0),
+                 node.get("seed", 0),
+-                math.sin(float(t) * frequency),
++                float(t) * frequency,
+             ]
+         )
+ 
+diff --git a/Solver/Kernel/OpenCL/forces.cl b/Solver/Kernel/OpenCL/forces.cl
+--- a/Solver/Kernel/OpenCL/forces.cl
++++ b/Solver/Kernel/OpenCL/forces.cl
+@@ -127,21 +127,27 @@
+     /*
+     Compute the acceleration due to the turbulence force
+     */
+-    float acceleration = 0.0f;
++    float3 acceleration = (float3)(0.0f);
+ 
+     for (int index = 0; index < turbulence_count; ++index) {
+         const int offset = index * 4;
+         const float amplitude = turbulence_config[offset];
+         const float scale = turbulence_config[offset + 1];
+         const int seed = convert_int_rte(turbulence_config[offset + 2]);
+-        const float frequency_factor = turbulence_config[offset + 3];
+-        const float noise = gradient_noise_3d(origin_x + (float)i * delta, origin_y + (float)j * delta,
+-                                              origin_z + (float)k * delta, seed, scale);
+-
+-        acceleration = mad(amplitude * frequency_factor, noise, acceleration);
++        const float phase = turbulence_config[offset + 3];
++        const float safe_scale = fmax(fabs(scale), 1.0e-6f);
++        const float3 point = (float3)(origin_x + (float)i * delta,
++                                      origin_y + (float)j * delta,
++                                      origin_z + (float)k * delta)
++                             + phase * safe_scale * (float3)(0.31f, 0.17f, 0.23f);
++        const float3 gx = gradient_noise_gradient(point, seed, safe_scale);
++        const float3 gy = gradient_noise_gradient(point, seed + 17, safe_scale);
++        const float3 gz = gradient_noise_gradient(point, seed + 53, safe_scale);
++        const float3 curl = (float3)(gz.y - gy.z, gx.z - gz.x, gy.x - gx.y);
++        acceleration += curl * (amplitude * safe_scale * 0.5f);
+     }
+ 
+-    *ax = acceleration;
+-    *ay = acceleration;
+-    *az = acceleration;
++    *ax = acceleration.x;
++    *ay = acceleration.y;
++    *az = acceleration.z;
+ }
+diff --git a/Solver/Kernel/OpenCL/noise.cl b/Solver/Kernel/OpenCL/noise.cl
+--- a/Solver/Kernel/OpenCL/noise.cl
++++ b/Solver/Kernel/OpenCL/noise.cl
+@@ -66,3 +66,37 @@
+     // An amplitude of 0.5 varies the configured value by up to +/-50%.
+     return fmax(1.0f + noise * amplitude, 0.0f);
+ }
++
++inline float3 gradient_noise_gradient(const float3 point, const int seed, const float scale) {
++    // Analytic spatial derivative of the same quintic gradient noise above.
++    const float safe_scale = fmax(fabs(scale), 1.0e-6f);
++    const float3 p = point / safe_scale;
++    const int3 cell = convert_int3_rtn(p);
++    const float3 d = p - convert_float3(cell);
++    const float3 fade = d * d * d * (d * (d * 6.0f - 15.0f) + 10.0f);
++    const float3 fade_derivative = 30.0f * d * d * (d - 1.0f) * (d - 1.0f);
++    float3 derivative = (float3)(0.0f);
++    for (int z = 0; z < 2; ++z) {
++        for (int y = 0; y < 2; ++y) {
++            for (int x = 0; x < 2; ++x) {
++                const uint hash = gradient_noise_hash_3d(cell.x + x, cell.y + y, cell.z + z, seed);
++                const float3 gradient = (float3)(gradient_noise_dot(hash, 1.0f, 0.0f, 0.0f),
++                                                gradient_noise_dot(hash, 0.0f, 1.0f, 0.0f),
++                                                gradient_noise_dot(hash, 0.0f, 0.0f, 1.0f));
++                const float3 offset = d - (float3)((float)x, (float)y, (float)z);
++                const float value = dot(gradient, offset);
++                const float3 weight = (float3)(x ? fade.x : 1.0f - fade.x,
++                                               y ? fade.y : 1.0f - fade.y,
++                                               z ? fade.z : 1.0f - fade.z);
++                const float3 slope = (float3)(x ? fade_derivative.x : -fade_derivative.x,
++                                              y ? fade_derivative.y : -fade_derivative.y,
++                                              z ? fade_derivative.z : -fade_derivative.z);
++                derivative += gradient * (weight.x * weight.y * weight.z);
++                derivative += value * (float3)(slope.x * weight.y * weight.z,
++                                               weight.x * slope.y * weight.z,
++                                               weight.x * weight.y * slope.z);
++            }
++        }
++    }
++    return derivative * (0.70710678118f / safe_scale);
++}

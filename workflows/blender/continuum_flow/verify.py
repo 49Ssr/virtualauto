@@ -211,6 +211,12 @@ def run(work):
     voxelization_check = check_triangle_voxelization(
         work, context, cl.CommandQueue(context), voxelizer
     )
+    turbulence_spec = importlib.util.spec_from_file_location(
+        "va_cf_turbulence_test", Path(__file__).with_name("turbulence_check.py")
+    )
+    turbulence_test = importlib.util.module_from_spec(turbulence_spec)
+    turbulence_spec.loader.exec_module(turbulence_test)
+    turbulence_report = turbulence_test.run(work, context, cl.CommandQueue(context))
     preview_spec = importlib.util.spec_from_file_location(
         "va_cf_preview_test", Path(__file__).with_name("preview_check.py")
     )
@@ -422,6 +428,7 @@ def run(work):
         "rendered_volume_pixel_difference": render_difference,
         "preview_buffers": buffer_check,
         "triangle_voxelization": voxelization_check,
+        "turbulence_field": turbulence_report,
         "constant_controls_frame_updates": len(sampled_frames),
         "cancel_seconds": cancel_seconds,
         "worker_heartbeat_ticks": heartbeat,
