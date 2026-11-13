@@ -173,6 +173,19 @@ camera render to check their actual visibility: nonempty VDB grids alone do
 not establish a useful image. The fixture rendering check proves that exported
 smoke can be rendered; it does not qualify a particular fire shader or car shot.
 
+Source **Extra Pressure** enters the pressure solve as prescribed divergence
+(per second), not pressure in pascals. Source **Velocity** is applied before
+velocity advection and pressure projection; its value is not a guaranteed final
+exit velocity. Check the flow outside an opening when tuning these controls.
+
+For scripted edits, the scene-linked controls drawn in the node UI are authoritative.
+Use `animation_proxy.ensure_scene_proxy(scene, node, property_name)` to obtain
+the scene key and assign its value with the property's correct scalar/vector type.
+Changing only the node's stored RNA value can leave the exported setting unchanged.
+Inspect `build_config_dict` values before exporting geometry or running a test bake.
+Percentage controls are also mapped during export: for example, temperature
+production 3000 becomes 300, and expansion 10 becomes 0.003.
+
 ## Licence and redistribution
 
 The upstream extension manifest declares GPL-3.0-or-later. The patch and
