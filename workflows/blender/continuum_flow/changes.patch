@@ -371,8 +371,39 @@ index fffc23d..d45c698 100644
      capacity = active_count
  
  
+diff --git a/Solver/Kernel/OpenCL/scalar_update.cl b/Solver/Kernel/OpenCL/scalar_update.cl
+index 43f5c10..f634142 100644
+--- a/Solver/Kernel/OpenCL/scalar_update.cl
++++ b/Solver/Kernel/OpenCL/scalar_update.cl
+@@ -1,6 +1,26 @@
+ #include "advection_schemes.cl"
+ #include "sparse_managment.cl"
+ 
++__kernel void clear_solid_scalars(__global float *smoke,
++                                  __global float *fuel,
++                                  __global float *oxygen,
++                                  __global float *flame,
++                                  __global const uchar *obstacle_mask,
++                                  __global const int *index_tile_map,
++                                  const int tiles_x,
++                                  const int tiles_y,
++                                  const int tiles_z) {
++    const SparseCell cell = get_sparse_cell(index_tile_map, tiles_x, tiles_y, tiles_z);
++    if (!cell.valid || !obstacle_mask[cell.cell_index])
++        return;
++
++    const int index = cell.cell_index;
++    smoke[index] = 0.0f;
++    fuel[index] = 0.0f;
++    oxygen[index] = 0.0f;
++    flame[index] = 0.0f;
++}
++
+ inline void compute_combustion_sources(const float T,
+                                        const float fuel_concentration,
+                                        const float oxygen_concentration,
 diff --git a/Solver/Kernel/solver.py b/Solver/Kernel/solver.py
-index 2690adb..e9dd7dd 100644
+index 2690adb..3903531 100644
 --- a/Solver/Kernel/solver.py
 +++ b/Solver/Kernel/solver.py
 @@ -702,6 +702,7 @@ def solver(config: dict):
@@ -383,7 +414,30 @@ index 2690adb..e9dd7dd 100644
      time_step_count = 0
  
      while t < t_max:
-@@ -1631,7 +1632,7 @@ def solver(config: dict):
+@@ -1626,12 +1627,30 @@ def solver(config: dict):
+         fuel, fuel_work = fuel_work, fuel
+         oxygen, oxygen_work = oxygen_work, oxygen
+ 
++        # Advection/combustion can repopulate moving solid cells after obstacle BC.
++        # Keep those cells empty before they reach the next step, cache or preview.
++        if obstacle_base_masks:
++            scalar_update_kernels["clear_solid_scalars"](
++                queue,
++                global_work_size,
++                local_work_size,
++                smoke,
++                fuel,
++                oxygen,
++                flame,
++                obstacle_mask,
++                index_tile_map,
++                np.int32(tile_shape[0]),
++                np.int32(tile_shape[1]),
++                np.int32(tile_shape[2]),
++            )
++
+         # ------------time update-------------------
+         t = t + dt
          time_step_count += 1
  
          # ------------Output-------------------
@@ -673,72 +727,34 @@ index fec13cc..2df3aa8 100644
 +    }
 +}
 diff --git a/blender_manifest.toml b/blender_manifest.toml
-index 874d6d4..fc8ee17 100644
+index 874d6d4..f04e1ae 100644
 --- a/blender_manifest.toml
 +++ b/blender_manifest.toml
-@@ -1,31 +1,31 @@
--schema_version = "1.0.0"
--
--id = "continuum_flow"
+@@ -1,10 +1,10 @@
+ schema_version = "1.0.0"
+ 
+ id = "continuum_flow"
 -version = "0.4.0"
 -name = "Continuum Flow"
--tagline = "Smoke and fire simulator"
--maintainer = "Lutz Rohlfing"
--type = "add-on"
--
--website = "https://lutzr2000.github.io/Continuum_Flow/"
--tags = ["Physics"]
--
--blender_version_min = "5.1.0"
--
--platforms = ["windows-x64"]
--
--license = [
--    "SPDX:GPL-3.0-or-later",
--]
--
--wheels = [
--    "./wheels/numpy-2.4.6-cp313-cp313-win_amd64.whl",
--    "./wheels/trimesh-4.12.2-py3-none-any.whl",
--    "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
--    "./wheels/pytools-2026.1.1-py3-none-any.whl",
--    "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
--    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl"
--]
--
--[permissions]
--files = "Read and write simulation cache files"
-+schema_version = "1.0.0"
-+
-+id = "continuum_flow"
-+version = "0.4.4"
++version = "0.4.5"
 +name = "Continuum Flow - VirtualAuto"
-+tagline = "Smoke and fire simulator"
+ tagline = "Smoke and fire simulator"
+-maintainer = "Lutz Rohlfing"
 +maintainer = "VirtualAuto; upstream: Lutz Rohlfing"
-+type = "add-on"
-+
-+website = "https://lutzr2000.github.io/Continuum_Flow/"
-+tags = ["Physics"]
-+
-+blender_version_min = "5.1.0"
-+
-+platforms = ["windows-x64"]
-+
-+license = [
-+    "SPDX:GPL-3.0-or-later",
-+]
-+
-+wheels = [
-+    "./wheels/numpy-2.4.6-cp313-cp313-win_amd64.whl",
-+    "./wheels/trimesh-4.12.2-py3-none-any.whl",
-+    "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
-+    "./wheels/pytools-2026.1.1-py3-none-any.whl",
-+    "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
+ type = "add-on"
+ 
+ website = "https://lutzr2000.github.io/Continuum_Flow/"
+@@ -24,7 +24,9 @@ wheels = [
+     "./wheels/pyopencl-2026.1.4-cp313-cp313-win_amd64.whl",
+     "./wheels/pytools-2026.1.1-py3-none-any.whl",
+     "./wheels/siphash24-1.9-cp313-cp313-win_amd64.whl",
+-    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl"
 +    "./custom_wheels/continuum_vdb_writer-0.3.0-cp313-cp313-win_amd64.whl",
-+]
-+
-+[permissions]
-+files = "Read and write simulation cache files"
++    "./wheels/platformdirs-4.14.5-py3-none-any.whl",
++    "./wheels/typing_extensions-4.16.0-py3-none-any.whl",
+ ]
+ 
+ [permissions]
 diff --git a/Solver/General/forces.py b/Solver/General/forces.py
 --- a/Solver/General/forces.py
 +++ b/Solver/General/forces.py

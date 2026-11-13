@@ -14,13 +14,14 @@ This is not yet a validated replacement for a production car-fire setup.
   [tools.lock.json](tools.lock.json). The builder reads this record.
 - Changes: [changes.patch](../workflows/blender/continuum_flow/changes.patch).
 - Build command: [continuum.py](../src/virtualauto/continuum.py).
-- Executed checks: [verify.py](../workflows/blender/continuum_flow/verify.py) and
+- Executed checks: [verify.py](../workflows/blender/continuum_flow/verify.py),
+  [solid_check.py](../workflows/blender/continuum_flow/solid_check.py) and
   [preview_check.py](../workflows/blender/continuum_flow/preview_check.py).
 
 Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 `build/continuum-flow/` and `dist/`. They are not copied into tracked source.
 
-## Changes in 0.4.4 VirtualAuto
+## Changes in 0.4.5 VirtualAuto
 
 1. Reuse OpenCL preview staging buffers while their capacity is sufficient.
    They can grow and remain at peak capacity until the job ends. This reduces
@@ -57,6 +58,10 @@ Upstream source, dependency wheels, caches and generated ZIPs live in ignored
    noise derivatives, with GPU checks against finite differences. The approach
    follows [Bridson et al.'s curl-noise construction](https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph2007-curlnoise.pdf);
    its boundary-aware potential modulation is not implemented here.
+10. Clear smoke, fuel, oxygen and flame in solid cells after scalar advection and
+    combustion. The earlier obstacle boundary pass ran before these operations,
+    allowing them to repopulate collision cells before VDB export and preview.
+    Fluid cells, temperature and velocity are left unchanged by this final pass.
 
 No new panels, scene handlers, automatic materials or scene-conversion logic
 were added. Installing this variant does not convert a Mantaflow setup.
@@ -71,10 +76,12 @@ virtualauto continuum check --blender "C:\path\to\blender.exe"
 ```
 
 The build fetches the pinned source and Windows CPython 3.13 wheels, applies
-the patch, and writes `dist/continuum_flow-0.4.4-virtualauto-windows-x64.zip`.
+the patch, and writes `dist/continuum_flow-0.4.5-virtualauto-windows-x64.zip`.
 The check runs factory Blender with an original small emitter; it does not
 open a user's scene or enable an add-on in their preferences. Its result is
-`build/continuum-flow/verification.json`.
+`build/continuum-flow/verification.json`. The ZIP is then installed in an isolated
+profile, and another Blender process checks that its nodes and GPU access survive
+a normal startup. Those results are in `build/continuum-flow/package_verification.json`.
 
 For Blender 5.2.3, install the ZIP through Preferences → Extensions →
 Install from Disk. It uses the upstream `continuum_flow` extension ID, so it
@@ -83,7 +90,23 @@ Save the scene and stop active Continuum jobs before updating the extension.
 Blender may request a restart when compiled dependency wheels change; their
 versions are unchanged in this variant.
 
-## Validation on 2026-11-08
+## Validation on 2026-11-13
+
+The 0.4.5 check passed on Blender 5.2.3 LTS and the RTX 5090 Laptop GPU:
+
+- A GPU fixture clears all four scalar fields in stationary and moved solid cells.
+  Fluid cells and unmapped pool capacity remain bit-for-bit unchanged.
+- A seven-frame bake with a moving collision wall has zero smoke, fuel or flame
+  values in solid cells at every actual cache submission. It writes seven VDBs,
+  loads at the requested frames and visibly changes the Cycles test image.
+- The actual ZIP installs and enables in an isolated profile. Node registration
+  and OpenCL GPU detection also pass after a separate normal Blender startup.
+
+The scalar exclusion pass prevents values inside voxelized solids. It does not
+make openings narrower than the voxel size resolvable, or guarantee that a
+backtraced fluid path never crosses a wall. Check the result around thin panels.
+
+The following checks were first recorded on 2026-11-08 and rerun with 0.4.5:
 
 Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 
@@ -98,7 +121,7 @@ Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 | Analytic noise gradient and curl | Maximum gradient error versus finite differences approximately 0.00036; sampled divergence RMS approximately 0.00034, versus 3.31 for the old diagonal force |
 | Unanimated Source controls | Zero scene-frame updates during animation export |
 | Cycles image with VDB versus the same image without it | Nonzero pixel difference (mean absolute RGBA difference approximately 0.029 at 64 x 64) |
-| Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately one second with compiled kernels cached |
+| Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately 1.4 seconds with compiled kernels cached in the moving-wall fixture |
 | Requested start frame 41 | File 1 loads at 41, file 2 at 42, file 7 at 47 |
 | Small warmed worker cancellation | Approximately 0.015 seconds in this fixture |
 | Blender extension archive validator | Passed |

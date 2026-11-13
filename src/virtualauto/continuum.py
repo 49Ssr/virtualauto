@@ -117,6 +117,7 @@ def build(root: Path) -> Path:
         distribution, dependency_version = requirement.split("==")
         wheel = next(wheels.glob(f"{distribution}-{dependency_version}-*.whl"))
         manifest["wheels"].append(f"./wheels/{wheel.name}")
+    manifest["wheels"] = list(dict.fromkeys(manifest["wheels"]))
     text = manifest_path.read_text(encoding="utf-8")
     start = text.index("wheels = [")
     end = text.index("]", start) + 1
@@ -141,7 +142,7 @@ def build(root: Path) -> Path:
     changes = (
         f"Continuum Flow - VirtualAuto {version}\n"
         "Based on Lutz Rohlfing's Continuum Flow 0.4.0 at " + pin + ".\n"
-        "Modified 2026-11-08 by VirtualAuto contributors, GPL-3.0-or-later.\n\n"
+        "Modified 2026-11-13 by VirtualAuto contributors, GPL-3.0-or-later.\n\n"
         "Changes: reuse OpenCL preview staging buffers; "
         "edit preview appearance during a bake; "
         "align VDB sequence playback with the requested start frame; "
@@ -150,7 +151,9 @@ def build(root: Path) -> Path:
         "retain the chosen output material across bakes; "
         "reject surface voxels outside a triangle's geometric tolerance; "
         "skip animation timeline sampling for constant controls; "
-        "replace diagonal pulsing turbulence with time-varying 3D curl noise.\n"
+        "replace diagonal pulsing turbulence with time-varying 3D curl noise; "
+        "clear advected smoke, fuel, oxygen and flame from solid cells "
+        "before the next step, cache write and preview.\n"
         "Pressure, advection and combustion kernels "
         "and node identifiers are unchanged.\n"
         "Source changes and build instructions: "
@@ -195,7 +198,7 @@ def check(root: Path, blender: str) -> int:
     ).returncode
     if result:
         return result
-    return subprocess.run(
+    result = subprocess.run(
         [
             blender,
             "--background",
@@ -209,6 +212,43 @@ def check(root: Path, blender: str) -> int:
             str(work),
             "--zip",
             str(root / f"dist/continuum_flow-{version}-virtualauto-windows-x64.zip"),
+        ],
+        cwd=root,
+        env=environment,
+        check=False,
+    ).returncode
+    if result:
+        return result
+    # A successful installation is not enough: imports must survive a fresh process.
+    cold_code = "\n".join(
+        [
+            "import importlib, json, addon_utils, bpy",
+            "from pathlib import Path",
+            f"path = Path({str(work / 'package_verification.json')!r})",
+            "report = json.loads(path.read_text(encoding='utf-8'))",
+            "name = report['extension_module']",
+            "assert addon_utils.check(name) == (True, True)",
+            "registration = importlib.import_module(name + '.Internal.register')",
+            "assert registration.ContinuumFlowNodeTree.is_registered",
+            "assert registration.ContinuumFlowSourceNode.is_registered",
+            "status_path = name + '.Internal.Core.solver.solver_status'",
+            "status = importlib.import_module(status_path)",
+            "assert status.refresh_opencl_devices()['GPU']",
+            "timer = registration.preload_solver_backends",
+            "if bpy.app.timers.is_registered(timer): bpy.app.timers.unregister(timer)",
+            "report['cold_start_registered'] = True",
+            "path.write_text(json.dumps(report, indent=2), encoding='utf-8')",
+            "print(json.dumps(report), flush=True)",
+        ]
+    )
+    return subprocess.run(
+        [
+            blender,
+            "--background",
+            "--python-exit-code",
+            "1",
+            "--python-expr",
+            cold_code,
         ],
         cwd=root,
         env=environment,
