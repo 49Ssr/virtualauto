@@ -199,16 +199,21 @@ geometry around the car's centre.
 Check the actual collision cells along the exit, including the moving panel.
 An apparently open gap can be closed at the chosen cell size. In the private
 car scene, pushing upward from below a shoulder flap trapped the flame; the
-free route passed around its leading lip. Moving the emitter to that mouth
-produced visible flame at the opening. Increasing resolution alone
-had made the original hot block sharper without fixing that route.
+free route passed around its leading lip. Moving the emitter produced visible
+flame, but the user rejected the resulting placement and broad, glowing plume.
+That test established emission, not a finished artistic result. Increasing
+resolution alone had made the original hot block sharper without fixing it.
 
 A separate Source with Fuel and Smoke both zero can direct hot air through
 an opening using its Temperature and Local Velocity controls. It still adds
 heat, and pressure projection can change the resulting velocity. This is
 art-directed source forcing, not a dedicated guide solver. Keep the forcing
 regions small and check that flames originate at the opening rather than on
-the outside of the bodywork.
+the outside of the bodywork. Broad heated guide boxes plus shader noise were
+rejected in that scene: fine detail did not correct the underlying blob shape.
+Check annotated source locations against the evaluated render mesh, not just
+a named collision proxy or a bone label. In particular, the small triangular
+opening behind the side glass and the raised shoulder flap are different areas.
 
 Large maximum bounds also cost time even with sparse simulation enabled.
 Measure cached volume extents before enlarging a domain: preserve the long
