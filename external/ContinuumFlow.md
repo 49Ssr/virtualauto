@@ -193,12 +193,14 @@ automatically fill its interior. For a narrow outlet, place a small source at
 the inside of the visible mouth rather than heating a large box behind it.
 With Local velocity `(0, 0, speed)`, each source object's Z axis sets its exit
 direction; mesh face normals do not set that direction.
+Put the guide's pivot near its outlet so steering it does not swing the
+geometry around the car's centre.
 
 Check the actual collision cells along the exit, including the moving panel.
 An apparently open gap can be closed at the chosen cell size. In the private
 car scene, pushing upward from below a shoulder flap trapped the flame; the
 free route passed around its leading lip. Moving the emitter to that mouth
-helped fuel reach open air before burning away. Increasing resolution alone
+produced visible flame at the opening. Increasing resolution alone
 had made the original hot block sharper without fixing that route.
 
 A separate Source with Fuel and Smoke both zero can direct hot air through
@@ -213,6 +215,11 @@ Measure cached volume extents before enlarging a domain: preserve the long
 downwind trail while removing unused space above it. Check the replacement
 cache for boundary clipping; an old cache's extent is a starting estimate,
 not a guarantee for revised emitters.
+
+One later private scene bake completed 4,702 frames at 24 fps in 3,441 seconds
+on the RTX 5090 Laptop GPU, using 35 mm cells and 12 x 40 x 10 m maximum bounds.
+Its three-field VDB sequence occupied 95.7 GiB. This is one scene-specific run,
+not a controlled comparison with upstream or other solvers.
 
 ## Licence and redistribution
 
