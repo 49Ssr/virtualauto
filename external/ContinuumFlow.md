@@ -183,6 +183,9 @@ Use `animation_proxy.ensure_scene_proxy(scene, node, property_name)` to obtain
 the scene key and assign its value with the property's correct scalar/vector type.
 Changing only the node's stored RNA value can leave the exported setting unchanged.
 Inspect `build_config_dict` values before exporting geometry or running a test bake.
+Write floating-point vectors as lists of floats. A list such as `[0, 0, 3]`
+can create an integer scene-property array, which then fails the float UI
+metadata update when the file is reopened; use `[0.0, 0.0, 3.0]`.
 Percentage controls are also mapped during export: for example, temperature
 production 3000 becomes 300, and expansion 10 becomes 0.003.
 
@@ -210,6 +213,10 @@ copy. In the car test, painted panels matched but some carbon and black intake
 trim were 20–80 mm from the nearest collision surface. Adding those actual,
 body-weighted faces to the hidden collider corrected the sampled discrepancy
 across five poses without editing the visible car or its UVs.
+The same check later found missing non-painted faces inside the engine-cover
+frame, bonnet and front bumper. Copying only the painted material had omitted
+visible inner walls. Match the part's actual rigid bone and include its relevant
+opaque faces; do not assume a named collider represents every material on it.
 
 Fuel and smoke are added per source voxel per second. Changing cell size or
 source geometry therefore changes the total input. The measured free emitting
@@ -229,11 +236,23 @@ Check annotated source locations against the evaluated render mesh, not just
 a named collision proxy or a bone label. In particular, the small triangular
 opening behind the side glass and the raised shoulder flap are different areas.
 
+Test a longer late-fire interval as well as the first few seconds. Smoke buildup,
+boundary clipping and an early smoke-to-late-fire animation need separate checks.
+For a small bonnet gap, a separate compact solve can retain finer cells without
+refining the entire downwind engine plume. Keep its outlet attached to the moving
+bonnet, and retain native source keyframes so the final timing remains editable.
+
 Large maximum bounds also cost time even with sparse simulation enabled.
 Measure cached volume extents before enlarging a domain: preserve the long
 downwind trail while removing unused space above it. Check the replacement
 cache for boundary clipping; an old cache's extent is a starting estimate,
 not a guarantee for revised emitters.
+
+For offline animation export, unrelated ocean and terrain evaluation can dominate
+sampling time. Hide those objects only in the background worker, keep the rig,
+source and collision dependencies available, and compare their exported matrices
+against the normal scene before using the result. Restore visibility before
+saving; this is not a reason to change the user's viewport setup.
 
 One later private scene bake completed 4,702 frames at 24 fps in 3,441 seconds
 on the RTX 5090 Laptop GPU, using 35 mm cells and 12 x 40 x 10 m maximum bounds.
