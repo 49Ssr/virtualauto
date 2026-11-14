@@ -186,6 +186,34 @@ Inspect `build_config_dict` values before exporting geometry or running a test b
 Percentage controls are also mapped during export: for example, temperature
 production 3000 becomes 300, and expansion 10 becomes 0.003.
 
+### Placing fire at an opening
+
+Mesh Sources act on voxelized triangle surfaces. A closed emitter box does not
+automatically fill its interior. For a narrow outlet, place a small source at
+the inside of the visible mouth rather than heating a large box behind it.
+With Local velocity `(0, 0, speed)`, each source object's Z axis sets its exit
+direction; mesh face normals do not set that direction.
+
+Check the actual collision cells along the exit, including the moving panel.
+An apparently open gap can be closed at the chosen cell size. In the private
+car scene, pushing upward from below a shoulder flap trapped the flame; the
+free route passed around its leading lip. Moving the emitter to that mouth
+helped fuel reach open air before burning away. Increasing resolution alone
+had made the original hot block sharper without fixing that route.
+
+A separate Source with Fuel and Smoke both zero can direct hot air through
+an opening using its Temperature and Local Velocity controls. It still adds
+heat, and pressure projection can change the resulting velocity. This is
+art-directed source forcing, not a dedicated guide solver. Keep the forcing
+regions small and check that flames originate at the opening rather than on
+the outside of the bodywork.
+
+Large maximum bounds also cost time even with sparse simulation enabled.
+Measure cached volume extents before enlarging a domain: preserve the long
+downwind trail while removing unused space above it. Check the replacement
+cache for boundary clipping; an old cache's extent is a starting estimate,
+not a guarantee for revised emitters.
+
 ## Licence and redistribution
 
 The upstream extension manifest declares GPL-3.0-or-later. The patch and
