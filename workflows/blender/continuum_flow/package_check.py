@@ -36,6 +36,9 @@ answer = bpy.ops.extensions.package_install_files(
 assert answer == {"FINISHED"}, answer
 name = "bl_ext." + repo.module + ".continuum_flow"
 assert addon_utils.check(name) == (True, True), addon_utils.check(name)
+registration = importlib.import_module(name + ".Internal.register")
+assert registration.ContinuumFlowNodeTree.is_registered
+assert registration.ContinuumFlowSourceNode.is_registered
 module = importlib.import_module(name + ".Internal.Core.solver.solver_status")
 devices = module.refresh_opencl_devices()["GPU"]
 assert devices, "Installed extension did not find an OpenCL GPU"
@@ -43,9 +46,12 @@ report = {
     "blender": bpy.app.version_string,
     "archive": args.zip.name,
     "extension_enabled": True,
+    "extension_module": name,
+    "node_classes_registered": True,
     "gpu_devices": [d["device_name"] for d in devices],
     "profile": str(args.work / "package-profile"),
 }
+bpy.ops.wm.save_userpref()
 (args.work / "package_verification.json").write_text(
     json.dumps(report, indent=2), encoding="utf-8"
 )

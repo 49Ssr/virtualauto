@@ -14,13 +14,14 @@ This is not yet a validated replacement for a production car-fire setup.
   [tools.lock.json](tools.lock.json). The builder reads this record.
 - Changes: [changes.patch](../workflows/blender/continuum_flow/changes.patch).
 - Build command: [continuum.py](../src/virtualauto/continuum.py).
-- Executed checks: [verify.py](../workflows/blender/continuum_flow/verify.py) and
+- Executed checks: [verify.py](../workflows/blender/continuum_flow/verify.py),
+  [solid_check.py](../workflows/blender/continuum_flow/solid_check.py) and
   [preview_check.py](../workflows/blender/continuum_flow/preview_check.py).
 
 Upstream source, dependency wheels, caches and generated ZIPs live in ignored
 `build/continuum-flow/` and `dist/`. They are not copied into tracked source.
 
-## Changes in 0.4.4 VirtualAuto
+## Changes in 0.4.5 VirtualAuto
 
 1. Reuse OpenCL preview staging buffers while their capacity is sufficient.
    They can grow and remain at peak capacity until the job ends. This reduces
@@ -57,6 +58,10 @@ Upstream source, dependency wheels, caches and generated ZIPs live in ignored
    noise derivatives, with GPU checks against finite differences. The approach
    follows [Bridson et al.'s curl-noise construction](https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph2007-curlnoise.pdf);
    its boundary-aware potential modulation is not implemented here.
+10. Clear smoke, fuel, oxygen and flame in solid cells after scalar advection and
+    combustion. The earlier obstacle boundary pass ran before these operations,
+    allowing them to repopulate collision cells before VDB export and preview.
+    Fluid cells, temperature and velocity are left unchanged by this final pass.
 
 No new panels, scene handlers, automatic materials or scene-conversion logic
 were added. Installing this variant does not convert a Mantaflow setup.
@@ -71,10 +76,12 @@ virtualauto continuum check --blender "C:\path\to\blender.exe"
 ```
 
 The build fetches the pinned source and Windows CPython 3.13 wheels, applies
-the patch, and writes `dist/continuum_flow-0.4.4-virtualauto-windows-x64.zip`.
+the patch, and writes `dist/continuum_flow-0.4.5-virtualauto-windows-x64.zip`.
 The check runs factory Blender with an original small emitter; it does not
 open a user's scene or enable an add-on in their preferences. Its result is
-`build/continuum-flow/verification.json`.
+`build/continuum-flow/verification.json`. The ZIP is then installed in an isolated
+profile, and another Blender process checks that its nodes and GPU access survive
+a normal startup. Those results are in `build/continuum-flow/package_verification.json`.
 
 For Blender 5.2.3, install the ZIP through Preferences → Extensions →
 Install from Disk. It uses the upstream `continuum_flow` extension ID, so it
@@ -83,7 +90,23 @@ Save the scene and stop active Continuum jobs before updating the extension.
 Blender may request a restart when compiled dependency wheels change; their
 versions are unchanged in this variant.
 
-## Validation on 2026-11-08
+## Validation on 2026-11-13
+
+The 0.4.5 check passed on Blender 5.2.3 LTS and the RTX 5090 Laptop GPU:
+
+- A GPU fixture clears all four scalar fields in stationary and moved solid cells.
+  Fluid cells and unmapped pool capacity remain bit-for-bit unchanged.
+- A seven-frame bake with a moving collision wall has zero smoke, fuel or flame
+  values in solid cells at every actual cache submission. It writes seven VDBs,
+  loads at the requested frames and visibly changes the Cycles test image.
+- The actual ZIP installs and enables in an isolated profile. Node registration
+  and OpenCL GPU detection also pass after a separate normal Blender startup.
+
+The scalar exclusion pass prevents values inside voxelized solids. It does not
+make openings narrower than the voxel size resolvable, or guarantee that a
+backtraced fluid path never crosses a wall. Check the result around thin panels.
+
+The following checks were first recorded on 2026-11-08 and rerun with 0.4.5:
 
 Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 
@@ -98,7 +121,7 @@ Executed on Blender 5.2.3 LTS, Windows x64, RTX 5090 Laptop GPU, using OpenCL:
 | Analytic noise gradient and curl | Maximum gradient error versus finite differences approximately 0.00036; sampled divergence RMS approximately 0.00034, versus 3.31 for the old diagonal force |
 | Unanimated Source controls | Zero scene-frame updates during animation export |
 | Cycles image with VDB versus the same image without it | Nonzero pixel difference (mean absolute RGBA difference approximately 0.029 at 64 x 64) |
-| Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately one second with compiled kernels cached |
+| Small smoke/fire solve and VDB export | Seven files with nonempty density; approximately 1.4 seconds with compiled kernels cached in the moving-wall fixture |
 | Requested start frame 41 | File 1 loads at 41, file 2 at 42, file 7 at 47 |
 | Small warmed worker cancellation | Approximately 0.015 seconds in this fixture |
 | Blender extension archive validator | Passed |
@@ -149,6 +172,92 @@ temperature grids need a shader as well as a completed cache. Use a small
 camera render to check their actual visibility: nonempty VDB grids alone do
 not establish a useful image. The fixture rendering check proves that exported
 smoke can be rendered; it does not qualify a particular fire shader or car shot.
+
+Source **Extra Pressure** enters the pressure solve as prescribed divergence
+(per second), not pressure in pascals. Source **Velocity** is applied before
+velocity advection and pressure projection; its value is not a guaranteed final
+exit velocity. Check the flow outside an opening when tuning these controls.
+
+For scripted edits, the scene-linked controls drawn in the node UI are authoritative.
+Use `animation_proxy.ensure_scene_proxy(scene, node, property_name)` to obtain
+the scene key and assign its value with the property's correct scalar/vector type.
+Changing only the node's stored RNA value can leave the exported setting unchanged.
+Inspect `build_config_dict` values before exporting geometry or running a test bake.
+Write floating-point vectors as lists of floats. A list such as `[0, 0, 3]`
+can create an integer scene-property array, which then fails the float UI
+metadata update when the file is reopened; use `[0.0, 0.0, 3.0]`.
+Percentage controls are also mapped during export: for example, temperature
+production 3000 becomes 300, and expansion 10 becomes 0.003.
+
+### Placing fire at an opening
+
+Mesh Sources act on voxelized triangle surfaces. A closed emitter box does not
+automatically fill its interior. For a narrow outlet, place a small source at
+the inside of the visible mouth rather than heating a large box behind it.
+With Local velocity `(0, 0, speed)`, each source object's Z axis sets its exit
+direction; mesh face normals do not set that direction.
+Put the guide's pivot near its outlet so steering it does not swing the
+geometry around the car's centre.
+
+Check the actual collision cells along the exit, including the moving panel.
+An apparently open gap can be closed at the chosen cell size. In the private
+car scene, pushing upward from below a shoulder flap trapped the flame; the
+free route passed around its leading lip. Moving the emitter produced visible
+flame, but the user rejected the resulting placement and broad, glowing plume.
+That test established emission, not a finished artistic result. Increasing
+resolution alone had made the original hot block sharper without fixing it.
+
+Also compare the collision copy with the evaluated render geometry. Zero fuel
+inside the solver's solids does not detect a visible part missing from that
+copy. In the car test, painted panels matched but some carbon and black intake
+trim were 20–80 mm from the nearest collision surface. Adding those actual,
+body-weighted faces to the hidden collider corrected the sampled discrepancy
+across five poses without editing the visible car or its UVs.
+The same check later found missing non-painted faces inside the engine-cover
+frame, bonnet and front bumper. Copying only the painted material had omitted
+visible inner walls. Match the part's actual rigid bone and include its relevant
+opaque faces; do not assume a named collider represents every material on it.
+
+Fuel and smoke are added per source voxel per second. Changing cell size or
+source geometry therefore changes the total input. The measured free emitting
+volume fell about sevenfold in a narrower, finer-grid outlet test; compensating
+the fuel control restored its nominal input. This matches source input, not
+emitted light or real fuel mass. Temperature is assigned rather than added at
+that rate, so it does not use the same correction.
+
+A separate Source with Fuel and Smoke both zero can direct hot air through
+an opening using its Temperature and Local Velocity controls. It still adds
+heat, and pressure projection can change the resulting velocity. This is
+art-directed source forcing, not a dedicated guide solver. Keep the forcing
+regions small and check that flames originate at the opening rather than on
+the outside of the bodywork. Broad heated guide boxes plus shader noise were
+rejected in that scene: fine detail did not correct the underlying blob shape.
+Check annotated source locations against the evaluated render mesh, not just
+a named collision proxy or a bone label. In particular, the small triangular
+opening behind the side glass and the raised shoulder flap are different areas.
+
+Test a longer late-fire interval as well as the first few seconds. Smoke buildup,
+boundary clipping and an early smoke-to-late-fire animation need separate checks.
+For a small bonnet gap, a separate compact solve can retain finer cells without
+refining the entire downwind engine plume. Keep its outlet attached to the moving
+bonnet, and retain native source keyframes so the final timing remains editable.
+
+Large maximum bounds also cost time even with sparse simulation enabled.
+Measure cached volume extents before enlarging a domain: preserve the long
+downwind trail while removing unused space above it. Check the replacement
+cache for boundary clipping; an old cache's extent is a starting estimate,
+not a guarantee for revised emitters.
+
+For offline animation export, unrelated ocean and terrain evaluation can dominate
+sampling time. Hide those objects only in the background worker, keep the rig,
+source and collision dependencies available, and compare their exported matrices
+against the normal scene before using the result. Restore visibility before
+saving; this is not a reason to change the user's viewport setup.
+
+One later private scene bake completed 4,702 frames at 24 fps in 3,441 seconds
+on the RTX 5090 Laptop GPU, using 35 mm cells and 12 x 40 x 10 m maximum bounds.
+Its three-field VDB sequence occupied 95.7 GiB. This is one scene-specific run,
+not a controlled comparison with upstream or other solvers.
 
 ## Licence and redistribution
 

@@ -217,6 +217,12 @@ def run(work):
     turbulence_test = importlib.util.module_from_spec(turbulence_spec)
     turbulence_spec.loader.exec_module(turbulence_test)
     turbulence_report = turbulence_test.run(work, context, cl.CommandQueue(context))
+    solid_spec = importlib.util.spec_from_file_location(
+        "va_cf_solid_test", Path(__file__).with_name("solid_check.py")
+    )
+    solid_test = importlib.util.module_from_spec(solid_spec)
+    solid_spec.loader.exec_module(solid_test)
+    solid_report = solid_test.run(work, context, cl.CommandQueue(context))
     preview_spec = importlib.util.spec_from_file_location(
         "va_cf_preview_test", Path(__file__).with_name("preview_check.py")
     )
@@ -264,6 +270,18 @@ def run(work):
         segments=12, ring_count=8, radius=0.25, location=(0, 0, 0.4)
     )
     types["geometry"].source_object = bpy.context.object
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.20, 0, 0.4))
+    wall = bpy.context.object
+    wall.name = "Moving collision wall"
+    wall.scale = (0.10, 0.8, 0.8)
+    wall.keyframe_insert(data_path="location", frame=41)
+    wall.location.x = 0.40
+    wall.keyframe_insert(data_path="location", frame=47)
+    wall_geometry = tree.nodes.new("CONTINUUM_FLOW_GEOMETRY_NODE")
+    wall_geometry.source_object = wall
+    wall_obstacle = tree.nodes.new("CONTINUUM_FLOW_OBSTACLE_NODE")
+    tree.links.new(wall_geometry.outputs["Geometry"], wall_obstacle.inputs["Geometry"])
+    tree.links.new(wall_obstacle.outputs["Obstacle"], simulation.inputs["Obstacles"])
     for name, value in (("fuel", 10.0), ("smoke", 10.0), ("temperature", 900.0)):
         scene[animation_proxy.node_proxy_key(types["source"], name)] = value
     for source, out_name, target, in_name in (
@@ -304,7 +322,10 @@ def run(work):
     rig = check_pose_export(work, geometry_export)
     directory, config = export.export_config_dict(config)
     start = time.perf_counter()
-    main(config)
+    output_module = importlib.import_module(prefix + ".Solver.Kernel.output")
+    with solid_test.observe_outputs(output_module) as solid_outputs:
+        main(config)
+    assert sum(r["solid_cells"] for r in solid_outputs) > 0
     bake_seconds = time.perf_counter() - start
     files = sorted(Path(directory).glob("*.vdb"))
     assert len(files) == simulation.end_frame - simulation.start_frame + 1, len(files)
@@ -429,6 +450,8 @@ def run(work):
         "preview_buffers": buffer_check,
         "triangle_voxelization": voxelization_check,
         "turbulence_field": turbulence_report,
+        "solid_scalar_fields": solid_report,
+        "moving_obstacle_cache_outputs": solid_outputs,
         "constant_controls_frame_updates": len(sampled_frames),
         "cancel_seconds": cancel_seconds,
         "worker_heartbeat_ticks": heartbeat,

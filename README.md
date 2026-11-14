@@ -31,8 +31,9 @@ selection, loads results without leaving that mode, and retains the material
 chosen on the Output node across bakes.
 It corrects false surface voxels outside triangles and avoids resampling the
 timeline for controls that have no animation.
-Version **0.4.4** replaces the old diagonal, periodically fading turbulence
-with moving curl noise while keeping the existing turbulence controls.
+Version **0.4.5** also clears smoke, fuel and flame from collision cells after
+advection, before cache output. It retains the moving curl turbulence and existing
+controls from 0.4.4.
 
 ```text
 virtualauto continuum build
