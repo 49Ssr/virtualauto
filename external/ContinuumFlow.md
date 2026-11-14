@@ -204,6 +204,20 @@ flame, but the user rejected the resulting placement and broad, glowing plume.
 That test established emission, not a finished artistic result. Increasing
 resolution alone had made the original hot block sharper without fixing it.
 
+Also compare the collision copy with the evaluated render geometry. Zero fuel
+inside the solver's solids does not detect a visible part missing from that
+copy. In the car test, painted panels matched but some carbon and black intake
+trim were 20–80 mm from the nearest collision surface. Adding those actual,
+body-weighted faces to the hidden collider corrected the sampled discrepancy
+across five poses without editing the visible car or its UVs.
+
+Fuel and smoke are added per source voxel per second. Changing cell size or
+source geometry therefore changes the total input. The measured free emitting
+volume fell about sevenfold in a narrower, finer-grid outlet test; compensating
+the fuel control restored its nominal input. This matches source input, not
+emitted light or real fuel mass. Temperature is assigned rather than added at
+that rate, so it does not use the same correction.
+
 A separate Source with Fuel and Smoke both zero can direct hot air through
 an opening using its Temperature and Local Velocity controls. It still adds
 heat, and pressure projection can change the resulting velocity. This is
